@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Data & model artifacts (live on the HF Hub, not in git)
+*.ckpt
+*.safetensors
+*.pt
+*.pth
+data/
+outputs/
+wandb/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
