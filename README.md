@@ -4,7 +4,7 @@ A custom curriculum for re-developing robot learning fundamentals through to 202
 
 **Who this is for:** me — MS Robotics background, strong math/ML, refreshing and modernizing. Every lesson assumes graduate-level comfort with linear algebra, probability, optimization, and PyTorch.
 
-**Format:** discrete lessons, built in public. One lesson = one directory = one merged PR with code, results, and a short writeup. Each lesson README states its deliverables and a concrete "done when" bar.
+**Format:** discrete lessons, built in public. One lesson = one directory = one merged PR with code, results, and a short writeup. Every lesson README follows [TEMPLATE.md](TEMPLATE.md) — backward-designed from a binary "done when" bar: measurable learning objectives, a Background briefing with the actual math, numbered build parts with verbatim commands and ✅ checkpoints, a deliverables manifest with acceptance criteria, self-check questions, and a researched pitfalls table. Each lesson ships a `RESULTS.md` with numbers, plots, and interpretation.
 
 ## The arc
 
@@ -65,7 +65,7 @@ Classical robotics → why it hits a wall → RL on real robots → generative i
 | # | Lesson | Deliverable |
 |---|--------|-------------|
 | 20 | [Beyond imitation](lessons/20-beyond-imitation/) | Survey note on RECAP/π*0.6 + world-model policies; run one in LeRobot v0.6 |
-| 21 | [Embodied reasoning](lessons/21-embodied-reasoning/) | Gemini Robotics-ER 1.5 as planner over a local policy |
+| 21 | [Embodied reasoning](lessons/21-embodied-reasoning/) | Gemini Robotics-ER 2 as planner over a local policy |
 | 22 | [Capstone](lessons/22-capstone/) | Open-ended project: proposal, code, video, report |
 
 ### Hardware track (SO-101; start after Lesson 02)
