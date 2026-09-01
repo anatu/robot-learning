@@ -13,9 +13,8 @@ A custom curriculum for re-developing robot learning fundamentals through to 202
 | | |
 |---|---|
 | Core track | **1 / 23** — Lesson 00 (setup) done |
-| Hardware track | **0 / 6** — all hardware ordered: cameras ETA Sep 4, SO-101 arm ETA ~Sep 11 (Partabot, assembled) |
+| Hardware track | **0 / 6** — all hardware ordered (Partabot SO-101 assembled + 2 cameras) |
 | Now / next | Lesson 01 — dataset anatomy; H1 unblocks when the arm lands |
-| Spend to date | $608.49 hardware · $0 GPU · $0 API |
 | Environment | lerobot 0.6.1 · torch 2.11.0 (MPS) · mujoco 3.12.0 · Python 3.12.12 — pinned in [requirements.lock](requirements.lock) |
 
 ## The arc
