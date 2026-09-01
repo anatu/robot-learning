@@ -6,6 +6,18 @@ A custom curriculum for re-developing robot learning fundamentals through to 202
 
 **Format:** discrete lessons, built in public. One lesson = one directory = one merged PR with code, results, and a short writeup. Every lesson README follows [TEMPLATE.md](TEMPLATE.md) — backward-designed from a binary "done when" bar: measurable learning objectives, a Background briefing with the actual math, numbered build parts with verbatim commands and ✅ checkpoints, a deliverables manifest with acceptance criteria, self-check questions, and a researched pitfalls table. Each lesson ships a `RESULTS.md` with numbers, plots, and interpretation.
 
+## Status
+
+*Updated 2026-09-01. Detail: [JOURNAL.md](JOURNAL.md); per-lesson checkboxes below under [Progress](#progress).*
+
+| | |
+|---|---|
+| Core track | **1 / 23** — Lesson 00 (setup) done |
+| Hardware track | **0 / 6** — all hardware ordered: cameras ETA Sep 4, SO-101 arm ETA ~Sep 11 (Partabot, assembled) |
+| Now / next | Lesson 01 — dataset anatomy; H1 unblocks when the arm lands |
+| Spend to date | $608.49 hardware · $0 GPU · $0 API |
+| Environment | lerobot 0.6.1 · torch 2.11.0 (MPS) · mujoco 3.12.0 · Python 3.12.12 — pinned in [requirements.lock](requirements.lock) |
+
 ## The arc
 
 Classical robotics → why it hits a wall → RL on real robots → generative imitation policies (ACT, Diffusion Policy) → generalist VLAs (π0, SmolVLA) → what's past imitation (RL-from-experience, world models). This mirrors the tutorial's argument, augmented where it's thin: real math for kinematics/control, the RL algorithm core it skips, rigorous evaluation, and the post-Oct-2025 frontier.
@@ -13,7 +25,7 @@ Classical robotics → why it hits a wall → RL on real robots → generative i
 ## Tracks
 
 - **Core track (lessons 00–22):** theory + simulation. Runs on an Apple Silicon Mac (MuJoCo, gym-pusht/aloha/hil, Meta-World all run natively); heavy training rents a cloud GPU (~$1–8/run on Vast/RunPod — datasets and checkpoints round-trip through the HF Hub).
-- **Hardware track (H1–H6):** a real SO-101 leader/follower pair (~$375 all-in). Starts any time after Lesson 02; interleaves with the core track. H5/H6 are stretch.
+- **Hardware track (H1–H6):** a real SO-101 leader/follower pair (~$610 all-in as built — assembled kit; see Budget). Starts any time after Lesson 02; interleaves with the core track. H5/H6 are stretch.
 
 ## Syllabus
 
