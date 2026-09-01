@@ -64,7 +64,7 @@ Classical robotics → why it hits a wall → RL on real robots → generative i
 ### Phase 6 — Frontier + capstone
 | # | Lesson | Deliverable |
 |---|--------|-------------|
-| 20 | [Beyond imitation](lessons/20-beyond-imitation/) | Survey note on RECAP/π*0.6 + world-model policies; run one in LeRobot v0.6 |
+| 20 | [Beyond imitation](lessons/20-beyond-imitation/) | Survey note on RECAP/π*0.6 + world-model policies + task-specification spectrum; run one in LeRobot v0.6; Skild S1 claims audit |
 | 21 | [Embodied reasoning](lessons/21-embodied-reasoning/) | Gemini Robotics-ER 2 as planner over a local policy |
 | 22 | [Capstone](lessons/22-capstone/) | Open-ended project: proposal, code, video, report |
 
@@ -102,7 +102,7 @@ Stretch: LeKiwi base kit $179 + Raspberry Pi 5 ~$80 (mobile), then ~$250 more fo
 - **RL theory:** [Berkeley CS 285](https://rail.eecs.berkeley.edu/deeprlcourse/) (Fall 2023 videos, Sp26 homeworks), [Stanford CS 224R](https://cs224r.stanford.edu/)
 - **Control/classical:** [CMU 16-745](https://optimalcontrol.ri.cmu.edu/), [MIT Robotic Manipulation](https://manipulation.csail.mit.edu/), [Underactuated Robotics](https://underactuated.csail.mit.edu/), [CS223A via SEE](https://see.stanford.edu/Course/CS223A)
 - **Peer syllabus:** [ETH Robot Learning: From Fundamentals to Foundation Models](https://cvg.ethz.ch/lectures/Robot-Learning/) (Mees, Sp26 — open videos + homeworks)
-- **Frontier reading spine:** [Physical Intelligence blog](https://www.pi.website/blog) (π0 → FAST → π0.5 → knowledge insulation → real-time chunking → π*0.6 → π0.7)
+- **Frontier reading spine:** [Physical Intelligence blog](https://www.pi.website/blog) (π0 → FAST → π0.5 → knowledge insulation → real-time chunking → π*0.6 → π0.7) + [Skild S1](https://skild.ai/blogs/s1) (in-context task specification — audited in Lesson 20)
 
 ## Progress
 
