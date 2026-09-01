@@ -82,11 +82,10 @@ Classical robotics → why it hits a wall → RL on real robots → generative i
 
 | Item | Cost |
 |------|------|
-| Seeed SO-ARM101 Pro motor/electronics kit (US warehouse) | $289 |
-| Official 3D-printed parts set (or ~$20 PLA+ if self-printing) | $35 |
-| 2× USB webcams (InnoMaker 1080p wrist + any 1080p overhead — use two different models) | ~$50 |
+| Partabot SO-ARM101 Full Kit, assembled — actual, incl. shipping + tax ([ORDER.md](hardware/ORDER.md)) | $556.79 |
+| 2× USB webcams — actual: InnoMaker 1080p wrist + EMEET C960 overhead, incl. tax | $51.70 |
 | Cloud GPU credits (Vast.ai/RunPod 4090/A100; ~$1–3 per ACT/DP run, ~$3–8 per SmolVLA fine-tune) | ~$50 |
-| **Total** | **~$425** |
+| **Total** | **~$658** |
 
 Stretch: LeKiwi base kit $179 + Raspberry Pi 5 ~$80 (mobile), then ~$250 more for the XLeRobot dual-arm upgrade.
 

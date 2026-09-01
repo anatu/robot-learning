@@ -53,13 +53,13 @@ Lead time is 1–2 weeks; every day of delay pushes the whole H-track.
 |---|---|---|
 | **Seeed SO-ARM101 Pro (US warehouse)** — default | $289 | fast US shipping, both arms' servos, known-good QC |
 | WowRobo | ~$199–269 | cheapest, ships from China (adds 1–3 weeks — usually defeats the purpose) |
-| Partabot US full kit | $329 | includes printed parts; buy if in stock and you don't want to deal with printing |
+| Partabot US full kit | $329 (assembled: $479) | includes printed parts; buy if in stock and you don't want to deal with printing. Assembled skips H1's build steps — chosen path, see `hardware/ORDER.md` |
 
 2. Printed parts: official set $35, or ~$20 of PLA+ if you have printer access (`STL/` in the SO-ARM100 repo; print the gauge in `STL/Gauges/` first to verify tolerances).
 3. Cameras: InnoMaker 1080p (wrist) + any second 1080p webcam **of a different model** (identical models make USB device disambiguation miserable in H1). ~$50 total.
 4. Log order numbers + ETAs in `hardware/ORDER.md`.
 
-**✅ Checkpoint:** both order confirmations exist; ETA is on your calendar; total ≤ ~$375.
+**✅ Checkpoint:** both order confirmations exist; ETA is on your calendar; total ≤ ~$375 (DIY path — the assembled Partabot path runs ~$610 all-in; actuals in `hardware/ORDER.md`). ✅ Done 2026-09-01.
 
 ## Part 2 — Python environment (30 min)
 
@@ -77,7 +77,7 @@ Lead time is 1–2 weeks; every day of delay pushes the whole H-track.
    python -c "import lerobot, torch; print(lerobot.__version__, torch.__version__, torch.backends.mps.is_available())"
    ```
 
-**✅ Checkpoint:** prints lerobot ≥ 0.6.1, torch in 2.7–2.11, `True` for MPS. `requirements.lock` is committed.
+**✅ Checkpoint:** prints lerobot ≥ 0.6.1, torch in 2.7–2.11, `True` for MPS. `requirements.lock` is committed. ✅ Done 2026-09-01: lerobot 0.6.1, torch 2.11.0, MPS `True`, Python 3.12.12.
 
 ## Part 3 — MuJoCo + models (30 min)
 
