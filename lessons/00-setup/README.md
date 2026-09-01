@@ -100,7 +100,7 @@ wandb login
 ```
 (`huggingface-cli` is dead in `huggingface_hub` ≥ 1.x — the binary still installs but only prints a deprecation error. All auth subcommands live under `hf auth`; uploads are `hf upload`.)
 
-**✅ Checkpoint:** `hf auth whoami` shows your username; `wandb login` confirms.
+**✅ Checkpoint:** `hf auth whoami` shows your username; `wandb login` confirms. ✅ Done 2026-09-01 — HF `natuanand93` (token `robot-learning-token`), W&B `natu-anand`; `check_no_leaked_keys.sh` passes (run it after any credential change).
 
 ## Part 5 — Hello-dataset (1 h)
 

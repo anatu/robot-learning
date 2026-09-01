@@ -16,6 +16,13 @@ Cross-lesson log. Per-lesson numbers and interpretation live in each lesson's `R
 
 Newest first. Format: `### YYYY-MM-DD — [NN / HN / meta] title` + up to 5 bullets.
 
+### 2026-09-01 — [00] Part 4 done + credential hygiene test
+
+- HF login verified (`natuanand93`, dedicated `robot-learning-token`); W&B verified (`natu-anand`).
+- Added `lessons/00-setup/check_no_leaked_keys.sh`: scans working tree + full git history for token patterns, enforces 600 perms on credential files, checks shell rc files and tracked `.env`s. Passing.
+- Found and fixed: `~/.cache/huggingface/token` and `stored_tokens` were world-readable 644 → chmod 600.
+- Watch-out: W&B session is bound to the `natu-anand-descript` entity — pass a personal `--entity`/`WANDB_ENTITY` on course runs or they land in that org.
+
 ### 2026-09-01 — [meta] huggingface-cli is dead — use `hf`
 
 - `huggingface-cli` in `huggingface_hub` 1.29.0 is a stub that only prints a deprecation error (verified). Replacement: `hf`, auth under `hf auth` (`hf auth login`, `hf auth whoami`), uploads via `hf upload`.
