@@ -65,7 +65,7 @@ lerobot-train \
 
 1. Before launching, run `lerobot-train --help` and record in `RESULTS.md` which parameter groups train by default (action expert only vs expert+VLM) — this determines what "full" means in your comparison and it has changed across LeRobot versions.
 2. Watch the flow-matching loss: steep drop over the first ~2k steps, then a slow grind. A loss that plateaus within 500 steps usually means the dataset's instruction or camera keys don't match what the policy expects — kill early, check Part 0 again.
-3. Push the checkpoint to the Hub (`huggingface-cli upload`), with a model card naming dataset, steps, and this lesson.
+3. Push the checkpoint to the Hub (`hf upload`), with a model card naming dataset, steps, and this lesson.
 
 **✅ Checkpoint:** W&B curve shows the two-phase shape; checkpoint on the Hub; trainable-parameter count logged.
 

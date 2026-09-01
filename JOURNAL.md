@@ -16,6 +16,11 @@ Cross-lesson log. Per-lesson numbers and interpretation live in each lesson's `R
 
 Newest first. Format: `### YYYY-MM-DD — [NN / HN / meta] title` + up to 5 bullets.
 
+### 2026-09-01 — [meta] huggingface-cli is dead — use `hf`
+
+- `huggingface-cli` in `huggingface_hub` 1.29.0 is a stub that only prints a deprecation error (verified). Replacement: `hf`, auth under `hf auth` (`hf auth login`, `hf auth whoami`), uploads via `hf upload`.
+- Fixed in lessons 00 (login/whoami), 14 (login + upload), 18 (upload) — all `huggingface-cli` references in the repo.
+
 ### 2026-09-01 — [00] mjpython broken on this Mac — dlopen fix + viewer workaround
 
 - Stage 1: `mjpython` died on `dlopen ... @rpath/libpython3.12.dylib` (uv's CPython keeps the dylib outside the app bundle's rpaths). Fix: `ln -sf ~/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/libpython3.12.dylib .venv/libpython3.12.dylib`. Symlink lives in gitignored `.venv` — recreate after any venv rebuild.

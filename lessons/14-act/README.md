@@ -65,7 +65,7 @@ Produces the course's first checkpoint. Rent a 4090 or A100 (Vast.ai/RunPod, CUD
 1. On the box:
    ```bash
    pip install "lerobot[training]" gym-aloha wandb
-   huggingface-cli login   # write token
+   hf auth login   # write token
    wandb login
    ```
 2. Launch (this is the LeRobot-documented recipe; 100k steps is the default and takes ~1 h on an A100):
@@ -82,7 +82,7 @@ Produces the course's first checkpoint. Rent a 4090 or A100 (Vast.ai/RunPod, CUD
 4. Read the curves: `l1_loss` should fall steeply for ~20k steps then grind; `kld_loss` should stay order-1 (β=10 is doing its job). A `kld_loss` collapsing to ~0 early means the encoder is being ignored — note it if you see it.
 5. Push the checkpoint:
    ```bash
-   huggingface-cli upload <you>/act_transfercube_base \
+   hf upload <you>/act_transfercube_base \
      outputs/train/act_transfercube_base/checkpoints/last/pretrained_model
    ```
 

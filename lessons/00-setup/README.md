@@ -95,12 +95,12 @@ Lead time is 1–2 weeks; every day of delay pushes the whole H-track.
 ## Part 4 — Accounts (15 min)
 
 ```bash
-huggingface-cli login   # use a WRITE token — you push datasets/checkpoints all course
+hf auth login   # use a WRITE token — you push datasets/checkpoints all course
 wandb login
 ```
-(Current `huggingface_hub` also ships the shorter `hf` CLI; either works — pick one and use it consistently.)
+(`huggingface-cli` is dead in `huggingface_hub` ≥ 1.x — the binary still installs but only prints a deprecation error. All auth subcommands live under `hf auth`; uploads are `hf upload`.)
 
-**✅ Checkpoint:** `huggingface-cli whoami` shows your username; `wandb login` confirms.
+**✅ Checkpoint:** `hf auth whoami` shows your username; `wandb login` confirms.
 
 ## Part 5 — Hello-dataset (1 h)
 
