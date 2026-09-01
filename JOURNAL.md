@@ -9,12 +9,18 @@ Cross-lesson log. Per-lesson numbers and interpretation live in each lesson's `R
 | Cloud GPU spend | $0 |
 | Hardware spend | $608.49 |
 | API spend | $0 |
-| Core lessons done | 0 / 23 |
+| Core lessons done | 1 / 23 |
 | Hardware lessons done | 0 / 6 |
 
 ## Entries
 
 Newest first. Format: `### YYYY-MM-DD — [NN / HN / meta] title` + up to 5 bullets.
+
+### 2026-09-01 — [00] Lesson 00 complete (1/23)
+
+- All six parts done in one day; evidence table in `lessons/00-setup/RESULTS.md`, version pins + accounts in `setup.md`.
+- Deviation: post #0 skipped by choice — building in public via the public repo only for now; revisit if/when a blog exists.
+- Deviation: lesson ran as direct commits to `main`, not the branch-per-lesson PR convention — decide from Lesson 01 whether to adopt PRs.
 
 ### 2026-09-01 — [00] Part 5 done — hello-dataset
 

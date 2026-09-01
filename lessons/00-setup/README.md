@@ -139,7 +139,7 @@ The first contact with the substrate of the whole course. Dataset: `lerobot/svla
 2. Push public. Branch-per-lesson, one merged PR per lesson — the PR description links `RESULTS.md`.
 3. Post #0 outline (publish anywhere you build in public): what the course is; the arc in five sentences (classical → RL → generative imitation → VLAs → beyond); the budget table; the public-accountability rule (every lesson ends in a merged PR); what post #1 will be (Lesson 01's format spec).
 
-**✅ Checkpoint:** repo is public, post #0 is live, `setup.md` records every version pin.
+**✅ Checkpoint:** repo is public, post #0 is live, `setup.md` records every version pin. ✅ Done 2026-09-01 — repo public, `setup.md` pins recorded; post #0 deliberately skipped (journaled).
 
 ## Deliverables
 
