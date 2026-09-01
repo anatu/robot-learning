@@ -16,6 +16,13 @@ Cross-lesson log. Per-lesson numbers and interpretation live in each lesson's `R
 
 Newest first. Format: `### YYYY-MM-DD — [NN / HN / meta] title` + up to 5 bullets.
 
+### 2026-09-01 — [00] Part 5 done — hello-dataset
+
+- `hello_dataset.py`: 30 fps / 50 episodes / 11,939 frames; all shapes as documented, `delta_timestamps` stack + `_is_pad` mask working. No v2.1→v3 conversion needed — the Hub copy loads directly, lesson step 2 is skippable.
+- `hello_grid.png`: episode 0 (303 frames, 9 sampled), full pick-place visible ("pink lego brick into the transparent box").
+- matplotlib was missing from the env — installed, `requirements.lock` refreshed.
+- torchcodec's dylib fails to load on this Mac; lerobot silently falls back to pyav (works, slower). Revisit before dataloader-heavy lessons (01/02, 14+).
+
 ### 2026-09-01 — [00] Part 4 done + credential hygiene test
 
 - HF login verified (`natuanand93`, dedicated `robot-learning-token`); W&B verified (`natu-anand`).

@@ -125,7 +125,7 @@ The first contact with the substrate of the whole course. Dataset: `lerobot/svla
    (verify the exact module path with `python -m lerobot.scripts --help` or the datasets doc page — converter locations have moved between minor versions).
 3. Render a 3×3 grid of `up`-camera frames spanning one episode; save as `hello_grid.png`.
 
-**✅ Checkpoint:** script runs clean on `mps`, shapes match the above, grid PNG shows a pick-place progressing left-to-right.
+**✅ Checkpoint:** script runs clean on `mps`, shapes match the above, grid PNG shows a pick-place progressing left-to-right. ✅ Done 2026-09-01 — all numbers/shapes matched; no v2.1→v3 conversion needed (Hub copy loads directly); grid verified.
 
 ## Part 6 — Repo scaffold + post #0 (45 min)
 
