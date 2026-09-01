@@ -84,12 +84,13 @@ Lead time is 1–2 weeks; every day of delay pushes the whole H-track.
 1. ```bash
    git clone https://github.com/google-deepmind/mujoco_menagerie ~/models/mujoco_menagerie
    git clone https://github.com/TheRobotStudio/SO-ARM100 ~/models/SO-ARM100
-   mjpython -m mujoco.viewer --mjcf ~/models/mujoco_menagerie/trs_so_arm100/scene.xml
+   python -m mujoco.viewer --mjcf ~/models/mujoco_menagerie/trs_so_arm100/scene.xml
    ```
+   (`python`, not `mjpython`: the managed viewer runs fine on the main thread, and on this machine `mjpython`'s UI-thread bridge is broken — see Pitfalls. `mjpython` is still required for `launch_passive` in later lessons.)
 2. In the viewer: drag each joint. Count DoF — 5 revolute joints + gripper. Cross-reference the names against the dataset's state features in Part 5 (`shoulder_pan`, `shoulder_lift`, `elbow_flex`, `wrist_flex`, `wrist_roll`, `gripper`).
 3. Load `~/models/SO-ARM100/Simulation/SO101/so101_new_calib.xml` the same way and note any joint-zero differences from the menagerie model (move a joint to its zero in both).
 
-**✅ Checkpoint:** both models open; you can name all six actuated DoF and have written one sentence in `setup.md` on which model you'd use for Lesson 02 and why.
+**✅ Checkpoint:** both models open; you can name all six actuated DoF and have written one sentence in `setup.md` on which model you'd use for Lesson 02 and why. ✅ Done 2026-09-01 — both models verified (nq=6, 6 actuators); `setup.md` written.
 
 ## Part 4 — Accounts (15 min)
 
@@ -174,6 +175,8 @@ The first contact with the substrate of the whole course. Dataset: `lerobot/svla
 | Dataset load fails with version/compat error | Hub copy is codebase v2.1, your lerobot expects v3 | run the v2.1→v3 converter (Part 5 step 2) |
 | `uv pip install` succeeds but `python` finds nothing | venv not activated / wrong interpreter | `which python` must point into `.venv`; or prefix commands with `uv run` |
 | Menagerie model errors on load | MuJoCo < 3.1.6 | `uv pip install -U mujoco` |
+| `mjpython` dies with `dlopen ... libpython3.12.dylib` not loaded | uv's standalone CPython keeps the dylib outside the rpaths mjpython's app bundle searches | `ln -sf ~/.local/share/uv/python/cpython-<ver>-macos-aarch64-none/lib/libpython3.12.dylib .venv/libpython3.12.dylib` (`.venv/bin/../` is on the search list) |
+| `mjpython -m mujoco.viewer` → `RuntimeError: Caught an unknown exception!` in `_Simulate` | mjpython's UI-thread bridge broken on this machine (mujoco 3.11/3.12, uv and Homebrew Pythons alike; raw GLFW works) | use plain `python -m mujoco.viewer` for the managed viewer; retest mjpython when a lesson first needs `launch_passive` |
 
 ## References
 
