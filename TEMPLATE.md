@@ -72,6 +72,16 @@ Full citations with links, including exact package/doc versions where
 the API surface matters.
 ```
 
+## Execution contract
+
+How to read any code that appears in a lesson README, and who writes what:
+
+1. **`bash` block** → paste into the terminal verbatim. Never becomes a file unless the step says so.
+2. **`python` block with no file or module named** → run-once (REPL or scratch); never committed.
+3. **"Module: `path.py`" header, a function signature, or a numbered list of functions** → a file *you* create and implement in the lesson directory. Stub files with the exact signatures are pre-scaffolded per lesson — fill them in; the stub docstring points at the README part that specifies it.
+4. **Division of labor.** Everything in a lesson's Deliverables table is student-authored — that is the lesson. Claude's lane: environment debugging, scaffolding stubs and test harnesses, running checkpoints and parity verification, code review after a working draft, journal/bookkeeping. Lesson 00 (pure setup) was the one exception.
+5. **Test stubs** ship `pytest.skip(..., allow_module_level=True)` so a fresh clone is green; remove the skip line as you implement.
+
 ## Writing rules
 
 1. **Specificity over brevity, but no padding.** Every sentence either instructs, explains a mechanism, or states a criterion. No motivational filler.

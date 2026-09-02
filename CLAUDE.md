@@ -18,6 +18,10 @@ Entry rules:
 - Update the running-totals table in place, don't append rows.
 - On lesson completion: tick the lesson's checkbox in `README.md`'s Progress section and increment the journal's done counters in the same commit.
 
+## Division of labor
+
+Lesson deliverables (everything in a lesson's Deliverables table) are authored by the user — the implementation is the lesson. Claude: environment debugging, stub/harness scaffolding, checkpoint verification, post-draft code review, journal and bookkeeping. Full contract in `TEMPLATE.md` § Execution contract.
+
 ## Conventions
 
 - Costs in USD, actuals not estimates.

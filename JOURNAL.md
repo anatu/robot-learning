@@ -16,6 +16,13 @@ Cross-lesson log. Per-lesson numbers and interpretation live in each lesson's `R
 
 Newest first. Format: `### YYYY-MM-DD — [NN / HN / meta] title` + up to 5 bullets.
 
+### 2026-09-02 — [meta] Execution contract + course-wide stub scaffold
+
+- Added `TEMPLATE.md` § Execution contract: bash blocks = terminal verbatim; unnamed python blocks = run-once; named modules/signatures = student-authored files; deliverables are the student's, Claude debugs/scaffolds/verifies/reviews. `CLAUDE.md` gained the division-of-labor pointer. Motivation: lesson instructions were ambiguous about file-vs-terminal-vs-delegate.
+- Scaffolded stubs for all 28 remaining lessons (01–22, H1–H6): ~90 files — Python modules with README signatures + `NotImplementedError`, module-level-skipped pytest suites, heading-skeleton markdown deliverables (NOTE/PROTOCOL/FORMAT/logs). All compile; `pytest lessons hardware` = 24 skipped, 0 errors.
+- pytest added to the env; `requirements.lock` refreshed.
+- Known judgment calls are documented in each stub's docstring; XML/MJCF assets and notebooks were not stubbed (no sensible stub form).
+
 ### 2026-09-01 — [00] Lesson 00 complete (1/23)
 
 - All six parts done in one day; evidence table in `lessons/00-setup/RESULTS.md`, version pins + accounts in `setup.md`.

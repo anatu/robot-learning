@@ -1,0 +1,29 @@
+# Lesson 09 Part 3 stub — spec in README.md "Part 3 — The grid".
+# Implement yourself. Claude scaffolds, reviews, and verifies only — see TEMPLATE.md execution
+# contract. One config expands into the 3 (batch_composition) x 2 (layernorm) x 3 (seeds) = 18
+# runs of the grid; `run_grid.sh` drives the expansion.
+
+env:
+  name: gym_hil
+  task: PandaPickCubeKeyboard-v0  # TODO: confirm against your installed gym-hil task IDs
+  fps: 10
+
+demo_dataset:
+  repo_id: null  # TODO: "<you>/gymhil_pickcube_demos_v1" from Part 1
+
+training:
+  total_env_steps: 150000  # TODO: confirm matches the Part 3 step budget
+  utd: 1  # TODO: paper's full recipe is UTD 20 + ensembles — note the caveat in RESULTS.md
+  batch_size: 256  # TODO: 128 demo + 128 online under `rlpd`
+
+grid:
+  batch_composition: [online, preload, rlpd]  # TODO
+  layernorm: [true, false]  # TODO
+  seeds: [0, 1, 2]  # TODO
+
+logging:
+  wandb_group: null  # TODO: set to the arm name, e.g. "rlpd-ln_on-seed0"
+
+metric:
+  success_rate_window: 20  # TODO: rolling window of episodes for the success-rate threshold
+  target_success_rate: 0.8  # TODO: steps-to-80% checkpoint metric
