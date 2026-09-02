@@ -2,9 +2,9 @@
 
 A custom curriculum for re-developing robot learning fundamentals through to 2026-frontier generalist policies. Built around Hugging Face's [Robot Learning: A Tutorial](https://arxiv.org/abs/2510.12403) (LeRobot team, Oct 2025), with theory depth drawn from Berkeley CS 285, Stanford CS 224R/CS 237B, CMU 16-745, MIT Robotic Manipulation, and ETH's Robot Learning course, plus everything that has happened since the tutorial shipped (LeRobot v0.5/v0.6, π*0.6/RECAP, GR00T N1.6+, MolmoAct 2, world-model policies).
 
-**Who this is for:** me — MS Robotics background, strong math/ML, refreshing and modernizing after several years away from robotics code. Every lesson assumes graduate-level comfort with linear algebra, probability, optimization, and PyTorch.
+**Who this is for.** This course was written for one person: someone with an MS in robotics and a strong background in mathematics and machine learning who has been away from robotics code for several years and wants to rebuild the fundamentals and then reach the 2026 frontier. Every lesson assumes graduate-level comfort with linear algebra, probability, optimization, and PyTorch, and none of them re-teach those.
 
-**What a lesson is.** Principles first, then practical exercises that prove you have them. Each lesson README follows [TEMPLATE.md](TEMPLATE.md): a **Principles** section with the mental model and the math, a **Carry forward** block, then numbered exercises typed as [Predict → Run], [Diagnose], [Decide], [Derive], [Read the kernel], [Build], [Read], or [Write], each ending in an observable checkpoint. Code is instrumental and AI-assisted: you write the spec and the check, an AI tool drafts the code, you read the draft and run the check. What you cannot delegate is the prediction, the interpretation, the derivation, and the decision. From-scratch reimplementation lives under **Going deeper** and never gates progression. Every lesson ships a `RESULTS.md` with predictions vs outcomes, figures, and interpretation. The course's one-line principles, in order, are collected in [PRINCIPLES.md](PRINCIPLES.md).
+**What a lesson is.** Each lesson is organized around the principles it installs, and the exercises exist to prove that those principles have landed. A lesson README follows [TEMPLATE.md](TEMPLATE.md) and is written to the standard in [WRITING.md](WRITING.md). It opens with a **Principles** section that gives the mental model and the mathematics, and closes that section with a short **Carry forward** list of the ideas you should still hold a year later. Numbered exercises follow, each tagged with its kind: [Predict → Run], [Diagnose], [Decide], [Derive], [Read the kernel], [Build], [Read], or [Write]. Each exercise ends with an observable checkpoint. Code is treated as instrumental. When an exercise needs a program, you write the specification and the check that proves it correct, an AI tool drafts the code, and you read the draft and run the check. What cannot be delegated is the prediction you write before an experiment, the interpretation you write after it, the derivations, and the decisions. Reimplementing things from scratch is offered under each lesson's **Going deeper** section for anyone who wants it, but it never gates progression. Every lesson ships a `RESULTS.md` containing predictions, outcomes, figures, and interpretation. The principles from all lessons are collected, one sentence each, in [PRINCIPLES.md](PRINCIPLES.md).
 
 ## Status
 
@@ -20,12 +20,11 @@ A custom curriculum for re-developing robot learning fundamentals through to 202
 
 ## How to work a lesson
 
-1. Read **Principles** and the **Carry forward** block until you could reproduce the equations and the design argument without the page.
-2. Work the exercises in order. Before any [Predict → Run], write the prediction in `RESULTS.md` first. For a [Build], write the spec (interface, behavior, the check), have Claude or another AI tool draft it, read the draft, run the check.
-3. Every [Diagnose] plants a real bug or reproduces a known failure. Name the mechanism, not just the fix.
-4. Every lesson ends in a [Decide] or [Write]: a config you would ship, a protocol you commit before running, a note that survives a skeptical reader.
-5. Answer the **Self-check** without notes. If one stumps you, Principles names where to re-read.
-6. Journal per [CLAUDE.md](CLAUDE.md): tooling fixes, spend, deviations.
+Start with the **Principles** section and read it until you could reproduce the equations and the design argument without the page in front of you. The **Carry forward** list at the end of that section is a good self-test: each line should read as obvious once the section has landed.
+
+Then work the exercises in order. Before any exercise tagged [Predict → Run], write your prediction in `RESULTS.md` first; the value of the exercise comes from the gap between what you expected and what you saw. For an exercise tagged [Build], write the specification (the interface, the behaviour, and the check that proves it works), have Claude or another AI tool draft the code, read the draft critically, and run the check. An exercise tagged [Diagnose] plants a real bug or reproduces a known failure; the goal is to name the mechanism, not just the fix. Most lessons end with a [Decide] or [Write] exercise: a configuration you would ship, a protocol you commit before running an experiment, or a note that would survive a skeptical reader.
+
+Finish by answering the **Self-check** questions without notes. If one of them stumps you, the Principles section names where to re-read. Keep the journal per [CLAUDE.md](CLAUDE.md): tooling fixes, money spent, and any deviation from a lesson's plan.
 
 ## The arc
 

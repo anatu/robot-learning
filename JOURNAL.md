@@ -16,6 +16,13 @@ Cross-lesson log. Per-lesson numbers and interpretation live in each lesson's `R
 
 Newest first. Format: `### YYYY-MM-DD — [NN / HN / meta] title` + up to 5 bullets.
 
+### 2026-09-02 — [meta] Prose standard + full re-edit of lesson text
+
+- The restructure's prose was written in a clipped, slogan-heavy register (bold run-in fragments, one-line verdicts, dash-appended asides, claims without reasons) and read as generic model output rather than teaching text. Cause: the exemplar and brief carried a chat-reply style, and every rewrite copied it.
+- Added `WRITING.md`: a textbook-register standard (complete paragraphs, reason with every claim, no slogans or bold fragments, descriptive exercise titles, an opening paragraph per exercise, complete-sentence Carry-forward bullets). `TEMPLATE.md` and `CLAUDE.md` now defer to it for all prose questions; the conversational style preferences explicitly do not apply to files.
+- All 29 lesson READMEs re-edited against `WRITING.md` with Lesson 01 as the exemplar; structure, commands, numbers, equations, tables, and pitfalls unchanged. `README.md` intro and "How to work a lesson" rewritten; `PRINCIPLES.md` regenerated from the new Carry-forward blocks.
+- Transferable rule: a writing standard has to exist as a file before generating long-form text at scale, because the register of the first exemplar propagates to everything derived from it.
+
 ### 2026-09-02 — [meta] Course restructured: principles-first, AI-assisted coding
 
 - Why: several years away from robotics code plus current AI coding tools make hand-implementing parsers, planners, and RL agents low-yield per hour; the learning value is in principles and practical exercises (predict → run → reconcile, diagnose, decide). Every lesson was re-derived from that premise.

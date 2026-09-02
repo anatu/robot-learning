@@ -1,6 +1,6 @@
 # Lesson Template
 
-Every lesson README follows this structure. Design is backward from the **Done when** bar: the principle the lesson installs comes first, then the exercises that prove you have it, then whatever code the exercises need. The code is the least important part. Sections marked *(optional)* may be dropped when they would be empty, never to save writing effort.
+Every lesson README follows this structure. Design is backward from the **Done when** bar: the principle the lesson installs comes first, then the exercises that prove you have it, and finally whatever code the exercises need. Of the three, the code matters least. Sections marked *(optional)* may be dropped when they would be empty, never to save writing effort.
 
 ## What a lesson is for
 
@@ -101,6 +101,8 @@ surface matters.
 
 ## Writing rules
 
+Prose register is governed by [WRITING.md](WRITING.md): complete sentences and paragraphs, reasons given with claims, no slogans or bold fragments in place of sentences. The rules below cover content rather than style.
+
 1. **Principle before procedure.** Every exercise names the principle it tests in its first sentence. A step that tests nothing is cut.
 2. **Commands are verbatim.** If a step can be a command, it is one, with flags. Where an API moves fast (LeRobot minor releases, hosted model endpoints), the step says what to run *and* where to verify the current syntax.
 3. **Expected results are quantified.** "It should work" is banned. State the number, the range, or the plot shape, and what a deviation means.
@@ -108,4 +110,4 @@ surface matters.
 5. **Checkpoints are cheap.** Observable in under a minute from artifacts the steps already produced.
 6. **Experiments are minimal.** The smallest grid that shows the effect, with the caveat stated. Three seeds when the claim is a ranking under noise; one seed when the claim is a mechanism.
 7. **Post-cutoff honesty.** For tools newer than the primary sources, give the procedure and the authoritative doc to check; never invent API details.
-8. **Specificity over brevity, no padding.** Every sentence instructs, explains a mechanism, or states a criterion.
+8. **Specificity over brevity, no padding.** Every sentence instructs, explains a mechanism, or states a criterion; but explanation is not padding, and a claim without its reason is incomplete.

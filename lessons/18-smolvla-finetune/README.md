@@ -1,82 +1,95 @@
 # Lesson 18 — Fine-Tune SmolVLA
 
-Fine-tuning is where a VLA becomes a policy: adapt `smolvla_base` two ways (full action-expert training vs LoRA), evaluate both on a standard benchmark with `lerobot-eval`, and price what SmolVLA's efficiency tricks actually cost on your hardware.
+Up to this point the course has only run pretrained vision-language-action models. This lesson is where you adapt one. You will take `smolvla_base`, fine-tune it on a benchmark dataset in two ways (training the action expert fully, and training low-rank adapters only), evaluate both against the untuned model under one protocol with `lerobot-eval`, and measure what SmolVLA's efficiency tricks cost and save on your own hardware. The recipe you settle on here is the one Lesson 19 compares against other models and the one H4 points at your own robot data.
 
 | | |
 |---|---|
 | **Phase** | 5 — Generalist policies |
-| **Time** | ~3–4 h desk time + 2 × ~4 h GPU wall-clock (parallelizable across two cheap instances) |
-| **Cost** | ~$3–8 per fine-tune on a rented A100/L4; Meta-World eval is Mac-local, LIBERO eval adds ~$1–2 of cloud time |
-| **Prerequisites** | 14 (`eval.py` contract + you've read training curves), 17 (`NOTE.md`: where SmolVLA sits in the design space), 01 (you inspect a dataset before training on it) |
-| **Feeds into** | 19 (this fine-tune is leaderboard entry #1), H4 (same recipe pointed at your H2 dataset), 20 (your eval rollouts become the reward-model calibration set) |
+| **Time** | ~3–4 h desk time + 2 × ~4 h GPU wall-clock (the two fine-tunes can run in parallel on two cheap instances) |
+| **Cost** | ~$3–8 per fine-tune on a rented A100/L4; the Meta-World evaluation runs on the Mac, and the LIBERO evaluation adds ~$1–2 of cloud time |
+| **Prerequisites** | 14 (the `evaluate()` contract, and experience reading training curves), 17 (`NOTE.md`, which places SmolVLA in the design space), 01 (the habit of inspecting a dataset before training on it) |
+| **Feeds into** | 19 (this fine-tune becomes leaderboard entry #1), H4 (the same recipe applied to your H2 dataset), 20 (your evaluation rollouts become the reward-model calibration set) |
 
 ## Learning objectives
 
 After this lesson you can:
 
-1. **Predict** and then **diagnose** a VLA fine-tune from its loss curve: the two-phase shape, and the flat-from-step-0 signature of a key mismatch.
-2. **Quantify** the LoRA-vs-full trade: success with CIs, trainable parameters, VRAM, wall-clock.
-3. **Explain** every flag in a `lerobot-eval` command and run both suites reproducibly (Meta-World local, LIBERO on Linux).
-4. **Measure** the Pareto cost of layer skipping on your own hardware and state which direction the result went.
-5. **Decide**, from your numbers, when parameter-efficient adaptation is enough.
+1. **Predict** the shape of a VLA fine-tune's loss curve and **diagnose** from a curve that lacks it that the dataset's keys or instructions do not match the policy.
+2. **Quantify** the trade between LoRA and full fine-tuning in success rate with confidence intervals, trainable parameters, VRAM, and wall-clock.
+3. **Explain** every flag in a `lerobot-eval` command and run both benchmark suites reproducibly, Meta-World on the Mac and LIBERO on a Linux machine.
+4. **Measure** the cost of SmolVLA's layer skipping on your own hardware and state which direction the result went.
+5. **Decide**, from your own numbers, when parameter-efficient adaptation is sufficient.
 
 ## Principles
 
-**SmolVLA** (Shukor et al. 2025, arXiv 2506.01844) is the counter-thesis to scale: a ~450M-param VLA trained on < 30k episodes of community LeRobotDataset data that stays competitive with models 10× larger. Its efficiency tricks are the syllabus:
+### What SmolVLA is and how it stays small
 
-- **Backbone:** SmolVLM2 — a SigLIP vision encoder feeding a SmolLM2 language model. Images are compressed to **64 visual tokens** per frame via pixel-shuffle.
-- **Layer skipping:** the action expert reads VLM features at layer $N = L/2$, not the top; the upper half of the LM never runs. The bet is that mid-depth features carry what control needs. Exercise 6 tests it.
-- **Action expert:** a compact (~100M) transformer with **interleaved cross-attention and self-attention** blocks — cross-attend to VLM features, self-attend within the action chunk — trained by flow matching to emit chunks of ~50 actions (Lesson 13's math, Lesson 17's structure).
-- **Async inference:** prediction decoupled from execution so the robot never idles between chunks (Lesson 16's stack; SmolVLA ships with it).
+SmolVLA (Shukor et al. 2025, arXiv 2506.01844) is the counter-argument to scale in the VLA literature: a model of roughly 450M parameters, trained on fewer than 30k episodes of community-contributed LeRobotDataset data, that stays competitive with models ten times its size. It achieves this through four design choices, and each of them is something this lesson either uses directly or measures.
 
-**Why fine-tune at all.** `smolvla_base` zero-shot on your task is a lottery ticket; 20k steps on task data is a policy. What pretraining buys is not the task — it is a representation from which the task is cheap to learn (Exercise 5 puts a number on "cheap").
+The backbone is SmolVLM2, a SigLIP vision encoder feeding a SmolLM2 language model. Each camera frame is compressed to 64 visual tokens by pixel-shuffling before it enters the language model, which keeps the sequence length, and therefore the attention cost, small.
 
-**Full vs parameter-efficient.** "Full" fine-tuning in LeRobot has meant different parameter groups across versions (action expert only vs expert + VLM); you must find out which before comparing. LoRA (Hu et al. 2021) inserts low-rank adapters into linear projections and trains only those — typically 1–5% of parameters — at some cost in the achievable floor. The lesson's comparison holds everything else fixed: same dataset, steps, batch size; the only variable is the adaptation mechanism.
+The action expert does not read the top of the language model. It reads the hidden states at layer $N = L/2$, and the upper half of the language model is never executed. This is called layer skipping. The claim behind it is that the features at mid-depth already carry what control needs, so the remaining layers are paying for language competence that a manipulation policy does not use. Exercise 6 tests that claim on your task.
 
-**Evaluation as infrastructure.** LeRobot v0.6 turned benchmarks into one `lerobot-eval` CLI over nine families (Meta-World, LIBERO, LIBERO-plus, RoboTwin 2.0, RoboCasa365, …), each with a docs page, Docker image, and a SmolVLA baseline checkpoint smoke-tested in CI. The per-benchmark docs page names the paired training dataset and the exact eval invocation — it is authoritative over anything printed here.
+The action expert itself is a compact transformer of about 100M parameters. Its blocks alternate between cross-attention, in which the action tokens attend to the VLM's features, and self-attention within the action chunk. It is trained by conditional flow matching to emit chunks of about 50 actions, which is the machinery of Lesson 13 arranged as in Lesson 17.
+
+Finally, inference is asynchronous. Action prediction is decoupled from execution so that the robot never idles between chunks. This is the stack of Lesson 16, and SmolVLA ships with it.
+
+### Why fine-tuning is the step that produces a policy
+
+Running `smolvla_base` on a new task without adaptation occasionally works and usually does not, because the pretraining data covers a distribution of tasks, cameras, and embodiments in which yours is at best a near neighbour. Twenty thousand training steps on task data turn the same weights into a policy. What pretraining provides is not the task itself but a representation from which the task is cheap to learn: fewer demonstrations, fewer steps, and better robustness to conditions that the task data did not cover. Exercise 5 puts a number on how cheap.
+
+### Full fine-tuning versus parameter-efficient adaptation
+
+The phrase "full fine-tune" hides a decision that has changed across LeRobot versions: which parameter groups are actually trained. In some versions only the action expert is trained by default, while in others the VLM backbone is trained as well. Before comparing anything you must find out which groups your installed trainer updates, because the answer determines what your comparison measures.
+
+Low-rank adaptation, or LoRA (Hu et al. 2021), takes a different approach. Instead of updating the weight matrices of the linear projections, it inserts a pair of small low-rank matrices alongside each projection and trains only those. The trainable parameter count is typically one to five percent of the full model. The cost is that the achievable loss floor is somewhat higher, because the adapter cannot represent every update that full training could. The comparison in this lesson holds everything else fixed, meaning the same dataset, the same number of steps, and the same batch size, so that the only difference between the two arms is the adaptation mechanism.
+
+### Evaluation as infrastructure
+
+LeRobot v0.6 consolidated benchmark evaluation into a single `lerobot-eval` command that covers nine benchmark families, among them Meta-World, LIBERO, LIBERO-plus, RoboTwin 2.0, and RoboCasa365. Each family has a documentation page, a Docker image, and a SmolVLA baseline checkpoint that is smoke-tested in continuous integration. The documentation page for a benchmark names the training dataset that pairs with it and gives the exact evaluation invocation. Because those pages track the installed version and this README does not, treat them as authoritative wherever the two disagree.
 
 **Carry forward**
 
-- A fine-tune's loss curve has a shape (steep for ~2k steps, then a grind); a curve without the shape means the inputs are wrong, not the model.
-- "Full fine-tune" is a parameter-group list, not a word; read it out of the trainer before you compare anything.
-- LoRA's cost is a slightly higher floor; its benefit is 10–100× fewer trainable parameters. Whether the floor matters is an empirical question per task.
-- Mid-depth VLM features suffice for control when they wouldn't for VQA; that says the action expert reads geometry, not semantics.
-- The benchmark's docs page is the API of record; a README is a snapshot.
+- A fine-tune's loss curve has a characteristic shape, a steep drop over roughly the first two thousand steps followed by a slow decline. A curve that is flat from the start indicates that the inputs do not match what the policy expects, not that the model cannot learn.
+- "Full fine-tune" names a list of parameter groups, and that list differs between LeRobot versions, so you must read it out of the trainer before you compare adaptation methods.
+- LoRA trains ten to a hundred times fewer parameters at the cost of a slightly higher loss floor; whether that floor matters for success rate is an empirical question that has to be answered per task.
+- Mid-depth VLM features are sufficient for control even though they would not be sufficient for visual question answering, which tells you that the action expert is reading geometric rather than semantic content.
+- The benchmark's documentation page is the interface of record, because it tracks the installed version and a README is a snapshot.
 
 | Source | Read for |
 |---|---|
-| SmolVLA paper §3 | the four efficiency tricks — for each, what it saves and what it risks |
-| Tutorial §5.4 | how the tutorial frames SmolVLA vs π0; the interleaved-attention diagram |
-| LeRobot docs: `smolvla` page | the canonical fine-tune command (Exercise 2 uses it verbatim) |
-| LeRobot docs: `metaworld` + `libero` benchmark pages | paired datasets, eval commands, expected baseline numbers |
-| LeRobot v0.6.0 release blog | which benchmarks have SmolVLA baselines — pick your target from this list |
+| SmolVLA paper §3 | the four efficiency choices, and for each one what it saves and what it risks |
+| Tutorial §5.4 | how the tutorial positions SmolVLA relative to π0; the interleaved-attention diagram |
+| LeRobot docs: `smolvla` page | the canonical fine-tune command, which Exercise 3 uses verbatim |
+| LeRobot docs: `metaworld` and `libero` benchmark pages | the paired datasets, evaluation commands, and expected baseline numbers |
+| LeRobot v0.6.0 release blog | which benchmarks have SmolVLA baselines; pick your target from this list |
 
 ## Exercise 1 — Pick the target and inspect the data [Read]
 
-Tests the principle that a VLA without matching keys and instructions is just an ACT with extra steps.
+Before training anything, you choose the benchmark pair and confirm that the training dataset contains what the policy expects. A vision-language-action model conditions on camera images under specific keys and on a language instruction; if the dataset's keys or instruction field do not match, the model degenerates into a plain visuomotor policy and the fine-tune fails silently. This exercise establishes that the inputs are right.
 
-1. Benchmark pair: **Meta-World** as the local suite (Mac CPU/MPS; 50 tasks in difficulty groups — pick one group or a 5-task subset) and **LIBERO** as the cloud suite (Linux-pinned extra). Read both benchmark docs pages end-to-end.
-2. From the docs page, identify the paired training dataset on the Hub. Load it with `LeRobotDataset`; record in `RESULTS.md`: camera keys and resolutions, state/action dims, fps, episode counts per task, and the language-instruction field.
+1. Choose the benchmark pair. Meta-World is the local suite, because it runs on the Mac's CPU or MPS; it has 50 tasks organised into difficulty groups, and you should pick one group or a subset of five tasks. LIBERO is the cloud suite, because its extra is pinned to Linux. Read both benchmark documentation pages from beginning to end.
+2. From the documentation page, identify the paired training dataset on the Hub. Load it with `LeRobotDataset` and record in `RESULTS.md` the camera keys and resolutions, the state and action dimensions, the frame rate, the episode count per task, and the contents of the language-instruction field.
 
-**✅ Checkpoint:** the feature table is in `RESULTS.md` and the instruction field is non-empty.
+**✅ Checkpoint:** the feature table is in `RESULTS.md`, and the instruction field is non-empty.
 
-## Exercise 2 — Zero-shot baseline [Predict → Run]
+## Exercise 2 — Establish the zero-shot baseline [Predict → Run]
 
-Tests objective 5's premise: what pretraining alone buys on your task.
+Everything in this lesson is measured relative to what the pretrained model can do without adaptation, so that number has to be established first, and it has to be established before any training so that it cannot be influenced by what you later see. This exercise records it, and asks you to predict it first so that you have a stated expectation of what pretraining alone buys on your task.
 
-1. **Write first:** the success rate you expect from `lerobot/smolvla_base` on your subset, from the ballpark on the benchmark docs page, with a one-line reason.
-2. Run `lerobot-eval` with `--policy.path=lerobot/smolvla_base` on your subset (exact flags from the benchmark docs page; on Linux boxes prefix `MUJOCO_GL=egl`). 50+ episodes, fixed seeds. Report success ± Wilson CI (Lesson 14's stats helper).
-3. Reconcile.
+1. Before running, write in `RESULTS.md` the success rate you expect from `lerobot/smolvla_base` on your subset, taking the untuned-baseline figure on the benchmark documentation page as your reference point, and give a one-line reason for your number.
+2. Run `lerobot-eval` with `--policy.path=lerobot/smolvla_base` on your subset, using the exact flags from the benchmark documentation page; on a Linux machine, prefix the command with `MUJOCO_GL=egl`. Use at least 50 episodes with fixed seeds, and report success with a Wilson confidence interval using Lesson 14's statistics helper.
+3. Compare the result with your prediction and record the comparison.
 
-**✅ Checkpoint:** a zero-shot number with CI that roughly matches the docs' untuned baseline. If it is 0.0 across every task, the env/policy wiring is broken — fix before spending GPU money.
+**✅ Checkpoint:** a zero-shot success rate with a confidence interval that roughly agrees with the documentation's untuned baseline. A success rate of exactly zero across every task means the environment or policy wiring is broken, and you should fix that before spending any GPU time.
 
 ## Exercise 3 — Full fine-tune [Predict → Run]
 
-Tests objective 1: the loss curve as a diagnostic.
+This exercise produces the first adapted checkpoint and, along the way, teaches you to read a fine-tune's loss curve as a diagnostic instrument. The curve has a shape when the inputs are right and lacks it when they are wrong, so you predict the shape before launching and check the run against it while it trains.
 
-1. **Write first:** the shape you expect for the flow-matching loss over 20k steps, and the signature that would mean the dataset's instruction or camera keys don't match the policy.
-2. Before launching, run `lerobot-train --help` and record in `RESULTS.md` which parameter groups train by default (action expert only vs expert + VLM) — this defines what "full" means in your comparison and has changed across LeRobot versions.
-3. Launch (the LeRobot-documented recipe; 20k steps ≈ 4 h on one A100):
+1. Before launching, write down the shape you expect for the flow-matching loss over 20k steps, and the curve shape that would tell you the dataset's instruction or camera keys do not match the policy.
+2. Run `lerobot-train --help` and record in `RESULTS.md` which parameter groups train by default, that is, whether only the action expert is trained or the VLM as well. This defines what "full" means in your comparison, and it has changed across LeRobot versions.
+3. Launch the fine-tune. This is the recipe from the official SmolVLA documentation, and 20k steps take roughly four hours on one A100:
    ```bash
    lerobot-train \
      --policy.path=lerobot/smolvla_base \
@@ -88,94 +101,94 @@ Tests objective 1: the loss curve as a diagnostic.
      --policy.device=cuda \
      --wandb.enable=true
    ```
-4. Watch the curve: steep drop over the first ~2k steps, then a slow grind. A plateau within 500 steps means kill early and recheck Exercise 1.
-5. Push the checkpoint (`hf upload`) with a model card naming dataset, steps, and this lesson. Log the trainable-parameter count.
+4. Watch the loss curve. It should drop steeply over roughly the first two thousand steps and then decline slowly. If it plateaus within the first 500 steps, stop the run and go back to Exercise 1, because that shape almost always means a key mismatch.
+5. Push the checkpoint with `hf upload`, with a model card that names the dataset, the step count, and this lesson. Log the trainable-parameter count.
 
-**✅ Checkpoint:** W&B curve shows the two-phase shape; checkpoint on the Hub; trainable-parameter count and default-groups note in `RESULTS.md`.
+**✅ Checkpoint:** the W&B curve shows the two-phase shape, the checkpoint is on the Hub, and `RESULTS.md` records both the trainable-parameter count and the default parameter groups.
 
 ## Exercise 4 — LoRA fine-tune [Build]
 
-Tests objective 2: the only variable is the adaptation mechanism.
+The second arm of the comparison trains low-rank adapters instead of the expert's full weights. For the comparison to mean anything, this arm must match the first in every respect except the adaptation mechanism, so the exercise is as much about controlling the experiment as about running it.
 
-1. Find the current parameter-efficient path: `lerobot-train --help | grep -iE "lora|peft|freeze"`. LeRobot grew PEFT support in the v0.5 line; flag names have drifted, so `--help` is authoritative.
-2. If no built-in flags exist in your version, spec a 20-line training shim for an AI tool: wrap the policy's action expert with `peft.LoraConfig(r=16, lora_alpha=32, target_modules=<the expert's linear projections>)`, log trainable vs total parameters, and otherwise call the same trainer. The check: trainable parameters ≤ 10% of Exercise 3's count.
-3. Match Exercise 3 exactly: same dataset, 20k steps, batch 64. Log trainable params and peak VRAM for both arms.
+1. Find the current parameter-efficient training path in your installed version with `lerobot-train --help | grep -iE "lora|peft|freeze"`. LeRobot added PEFT support in the v0.5 line, but the flag names have changed between releases, so the `--help` output is authoritative.
+2. If your version has no built-in flags, write a specification for a training shim of about twenty lines and have an AI tool draft it: wrap the policy's action expert with `peft.LoraConfig(r=16, lora_alpha=32, target_modules=<the expert's linear projections>)`, log the trainable and total parameter counts, and otherwise call the same trainer as Exercise 3. The check is that the trainable parameter count is at most 10% of Exercise 3's.
+3. Match Exercise 3 exactly: the same dataset, 20k steps, batch size 64. Log the trainable parameter count and the peak VRAM for both arms.
 
-**✅ Checkpoint:** LoRA arm trains with ≥ 10× fewer trainable parameters; loss curve shape resembles Exercise 3's, typically converging to a slightly higher floor.
+**✅ Checkpoint:** the LoRA arm trains with at least ten times fewer trainable parameters, and its loss curve has the same shape as Exercise 3's, typically settling at a slightly higher floor.
 
-## Exercise 5 — Three arms, one protocol [Predict → Run]
+## Exercise 5 — Evaluate the three arms under one protocol [Predict → Run]
 
-Tests objective 2 and the pretraining question.
+With three checkpoints in hand (the untuned model, the full fine-tune, and the LoRA fine-tune), you now evaluate them under identical conditions and build the table that answers the lesson's central question. You predict the LoRA-versus-full gap before you see it because doing so forces you to commit to a belief about how much the adapter's restricted capacity costs.
 
-1. **Write first:** the LoRA-vs-full success gap you expect (points), and whether you expect either to beat zero-shot with non-overlapping CIs.
-2. Evaluate zero-shot (Exercise 2), full-FT, and LoRA with the *same* seeds and episode counts: Meta-World subset locally, LIBERO subset on the cloud box (`MUJOCO_GL=egl`; use the benchmark's Docker image).
-3. If LoRA produced adapters rather than merged weights, merge before eval (`peft`'s `merge_and_unload()`) or confirm the eval entrypoint loads adapters — silent zero-shot-with-adapters-ignored is the classic false result.
-4. Table: rows = {zero-shot, LoRA, full}; columns = success ± CI per suite, trainable params, GPU-hours, $.
-5. Reconcile with your prediction.
+1. Before evaluating, write down the success-rate gap in percentage points you expect between LoRA and full fine-tuning, and whether you expect either fine-tune to beat the zero-shot baseline with non-overlapping confidence intervals.
+2. Evaluate all three arms with the same seeds and episode counts: the Meta-World subset locally, and the LIBERO subset on the cloud machine with `MUJOCO_GL=egl` set, using the benchmark's Docker image.
+3. If your LoRA run produced adapter weights rather than merged weights, merge them before evaluating with `peft`'s `merge_and_unload()`, or confirm that the evaluation entry point actually loads the adapters. An evaluation that silently ignores the adapters reports the zero-shot number under the LoRA label, and that is the most common false result in this exercise.
+4. Build the table: rows for zero-shot, LoRA, and full; columns for success with confidence interval per suite, trainable parameters, GPU-hours, and dollars.
+5. Compare the table with your prediction and record the comparison.
 
-**✅ Checkpoint:** both fine-tunes beat zero-shot decisively on the target tasks; the LoRA-vs-full gap is measured. If LoRA lands > ~10 points behind full, check which modules you targeted before concluding LoRA "doesn't work".
+**✅ Checkpoint:** both fine-tunes beat the zero-shot baseline decisively on the target tasks, and the LoRA-versus-full gap is a measured number. If LoRA lands more than about ten points behind full, check which modules the adapters targeted before concluding that LoRA is inadequate.
 
-## Exercise 6 — Layer-skip Pareto [Predict → Run]
+## Exercise 6 — Measure the layer-skip Pareto [Predict → Run]
 
-Tests objective 4: SmolVLA's boldest trick, priced on your hardware.
+SmolVLA's decision to discard the upper half of the language model is its most aggressive efficiency choice, and the paper's evidence for it comes from the paper's tasks. This exercise prices the choice on your task and your hardware, in latency, memory, and success, so that you know what it costs you rather than what it cost them.
 
-1. Locate the config field controlling which VLM layer feeds the expert (inspect `configuration_smolvla.py` in your installed LeRobot; record the field name in `RESULTS.md`).
-2. **Write first:** the latency ratio (half-depth vs full-depth, ms per chunk) and the direction of the success delta you expect, with a reason.
-3. Evaluate your full-FT checkpoint at $N{=}L/2$ (default) vs full depth on the local suite: success, latency (ms per chunk, batch 1, 100 warm calls, median + p95; `torch.mps.synchronize()` around timers on Mac), peak memory.
-4. Two-panel plot: success-vs-latency, success-vs-memory, both depths marked. Reconcile.
+1. Locate the configuration field that controls which VLM layer feeds the action expert by inspecting `configuration_smolvla.py` in your installed LeRobot, and record the field name in `RESULTS.md`.
+2. Before measuring, write down the latency ratio you expect between half depth and full depth in milliseconds per chunk, and the direction you expect the success rate to move, with a reason for each.
+3. Evaluate your full-fine-tune checkpoint at $N{=}L/2$, which is the default, and at full depth, on the local suite. Record success, latency (milliseconds per chunk at batch size 1, over 100 warm calls, reporting median and p95, with `torch.mps.synchronize()` around the timers on the Mac), and peak memory.
+4. Make a two-panel plot of success against latency and success against memory, with both depths marked. Compare with your prediction.
 
-**✅ Checkpoint:** half-depth roughly halves LM compute per chunk; the success delta is measured. Either direction is a result — the paper's claim tested on your task is the deliverable.
+**✅ Checkpoint:** half depth roughly halves the language model's compute per chunk, and the success delta is measured. Either direction of the success delta is a legitimate result; what the lesson requires is the paper's claim tested on your task.
 
-## Exercise 7 — When is PEFT enough? [Decide]
+## Exercise 7 — Decide when parameter-efficient adaptation is enough [Decide]
 
-From your Exercise 5 table and Exercise 6 plot: state the rule you would apply to the next task (H4's real-robot fine-tune) — LoRA or full, at which depth — and the row that justifies it. Name the condition under which you would flip the decision.
+The tables and plots from Exercises 5 and 6 exist so that a decision can be made from them. State the rule you would apply to the next fine-tune, which is H4's fine-tune on real robot data: LoRA or full, and at which depth. Cite the row that justifies the rule, and name the condition under which you would reverse the decision.
 
-**✅ Checkpoint:** the decision, its supporting row, and its flip condition are in `RESULTS.md`.
+**✅ Checkpoint:** the decision, its supporting row, and its reversal condition are in `RESULTS.md`.
 
 ## Deliverables
 
 | Artifact | Acceptance criteria |
 |---|---|
-| Hub: `<you>/smolvla_ft_full`, `<you>/smolvla_ft_lora` | load via `--policy.path`; model cards state dataset + steps |
-| `eval/run_eval.py` (+ JSON outputs) | one command per suite reruns the full 3-arm table; seeds fixed |
-| `plots/pareto.png` | success vs latency and vs memory, both depths marked |
-| `RESULTS.md` | Exercise 2/3/5/6 predictions with reconciliations; default-trainable-groups note; layer-skip field name; the 3-arm table with CIs; the Exercise 7 decision |
+| Hub: `<you>/smolvla_ft_full`, `<you>/smolvla_ft_lora` | load via `--policy.path`; model cards state dataset and step count |
+| `eval/run_eval.py` (+ JSON outputs) | one command per suite reruns the full three-arm table; seeds fixed |
+| `plots/pareto.png` | success against latency and against memory, both depths marked |
+| `RESULTS.md` | predictions and reconciliations for Exercises 2, 3, 5, and 6; the default-parameter-groups note; the layer-skip field name; the three-arm table with confidence intervals; the Exercise 7 decision |
 
 ## Done when
 
-- [ ] Full-FT and LoRA both beat zero-shot with non-overlapping CIs on the target subset.
-- [ ] LoRA's trainable-parameter fraction and success gap vs full are stated as numbers.
-- [ ] LIBERO eval ran on Linux via the benchmark's documented path, rerunnable from one committed script.
-- [ ] The layer-skip Pareto plot exists with latency measured on named hardware.
-- [ ] Every [Predict → Run] has its prediction written before the run.
+- [ ] Full fine-tune and LoRA both beat zero-shot with non-overlapping confidence intervals on the target subset.
+- [ ] LoRA's trainable-parameter fraction and its success gap against full fine-tuning are stated as numbers.
+- [ ] The LIBERO evaluation ran on Linux through the benchmark's documented path and can be rerun from one committed script.
+- [ ] The layer-skip Pareto plot exists, with latency measured on named hardware.
+- [ ] Every [Predict → Run] exercise has its prediction written before the run.
 
 ## Self-check
 
-1. Why do mid-depth VLM features suffice for control when they wouldn't for VQA? What does that say about what the action expert actually reads?
-2. Your LoRA targeted specific modules. Why do attention projections usually matter more than MLPs for adaptation, and what experiment in your setup would test it?
-3. Fine-tuning on 50 demos beats zero-shot from < 30k pretraining episodes. Reconcile that with "pretraining matters" — what exactly did pretraining buy?
-4. `lerobot-eval` success on LIBERO and on your Meta-World subset can disagree about which arm is better. Name two mechanisms.
-5. Which of SmolVLA's four efficiency tricks would you drop first with 10× the compute, and why?
+1. Why do mid-depth VLM features suffice for control when they would not suffice for visual question answering? What does that say about what the action expert actually reads?
+2. Your LoRA targeted specific modules. Why do attention projections usually matter more than MLPs for adaptation, and what experiment in your setup would test that?
+3. Fine-tuning on 50 demonstrations beats zero-shot from fewer than 30k pretraining episodes. Reconcile that with the claim that pretraining matters: what exactly did pretraining buy?
+4. `lerobot-eval` success on LIBERO and on your Meta-World subset can disagree about which arm is better. Name two mechanisms that would produce the disagreement.
+5. Which of SmolVLA's four efficiency choices would you drop first if you had ten times the compute, and why?
 
 ## Pitfalls
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `pip install` of the LIBERO extra fails on the Mac | the extra is Linux-pinned | run LIBERO only on the cloud box; use the benchmark's Docker image |
-| `mujoco.FatalError` / black frames on the cloud box | headless GL | `export MUJOCO_GL=egl`; `apt install libegl1` on minimal images |
-| OOM at batch 64 on a 4090 | 24 GB < the A100 recipe assumes | `--batch_size=32` + gradient accumulation ×2 (check `--help` for the flag) |
-| LoRA arm evaluates exactly at zero-shot level | adapters never loaded/merged at eval | `merge_and_unload()` before upload, or assert adapter load in the eval log |
-| Fine-tune loss flat from step 0 | camera-key/instruction mismatch between dataset and policy config | re-run Exercise 1 step 2; keys must match exactly |
-| W&B hangs on Vast.ai | blocked egress | `WANDB_MODE=offline` + `wandb sync` |
+| `pip install` of the LIBERO extra fails on the Mac | the extra is pinned to Linux | run LIBERO only on the cloud machine; use the benchmark's Docker image |
+| `mujoco.FatalError` or black frames on the cloud machine | headless OpenGL | `export MUJOCO_GL=egl`; `apt install libegl1` on minimal images |
+| Out of memory at batch size 64 on a 4090 | 24 GB is less than the A100 recipe assumes | `--batch_size=32` with gradient accumulation ×2 (check `--help` for the flag) |
+| LoRA arm evaluates at exactly the zero-shot level | adapters never loaded or merged at evaluation | `merge_and_unload()` before upload, or assert adapter loading in the evaluation log |
+| Fine-tune loss flat from step 0 | camera-key or instruction mismatch between dataset and policy config | rerun Exercise 1 step 2; the keys must match exactly |
+| W&B hangs on Vast.ai | blocked egress | `WANDB_MODE=offline`, then `wandb sync` |
 
 ## Going deeper
 
-- **Knowledge-insulation preview.** Repeat Exercise 3 with the VLM unfrozen vs frozen (if your version's defaults let you toggle it) and probe the backbone before/after on 50 VQA prompts — a small-scale preview of the experiment Capstone option 4 runs properly.
-- **LoRA rank sweep.** r ∈ {4, 16, 64} at fixed steps: where does the floor stop moving?
+- **A knowledge-insulation preview.** Repeat Exercise 3 with the VLM unfrozen and frozen, if your version's defaults let you toggle it, and probe the backbone before and after on 50 VQA prompts. This is a small-scale preview of the experiment that Capstone option 4 runs properly.
+- **A LoRA rank sweep.** Train at $r \in \{4, 16, 64\}$ for a fixed number of steps and find the rank at which the loss floor stops moving.
 
 ## References
 
 - Shukor et al., *SmolVLA: A Vision-Language-Action Model for Affordable and Efficient Robotics*, 2025. arXiv:2506.01844.
-- LeRobot SmolVLA docs (fine-tune recipe) + Meta-World/LIBERO benchmark pages, for your installed version.
+- LeRobot SmolVLA documentation (fine-tune recipe) and the Meta-World and LIBERO benchmark pages, for your installed version.
 - LeRobot v0.6.0 release blog: huggingface.co/blog/lerobot-release-v060.
 - Hu et al., *LoRA: Low-Rank Adaptation of Large Language Models*, 2021. arXiv:2106.09685.
