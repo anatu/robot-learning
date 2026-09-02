@@ -1,6 +1,6 @@
 # S1 Claims Audit (Lesson 20, Part 4)
 
-<!-- Desk-only. See README.md "Part 4 — The S1 claims audit". Classify first, conclude last —
+<!-- Desk-only. See the exercise in README.md that names this file. Classify first, conclude last —
      every judgment must cite a specific missing or present artifact. -->
 
 ## Claims table

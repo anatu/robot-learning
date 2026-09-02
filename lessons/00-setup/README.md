@@ -153,10 +153,10 @@ The first contact with the substrate of the whole course. Dataset: `lerobot/svla
 
 ## Done when
 
-- [ ] Hardware ordered; ETA logged.
-- [ ] `mjpython` opens both SO-101 models.
-- [ ] `hello_dataset.py` runs clean on `mps` with correct shapes.
-- [ ] Repo public with scaffold, lockfile, and post #0 live.
+- [x] Hardware ordered; ETA logged.
+- [x] Both SO-101 models open in the viewer (plain `python -m mujoco.viewer`; `mjpython` broken on this machine, see Pitfalls).
+- [x] `hello_dataset.py` runs clean on `mps` with correct shapes.
+- [x] Repo public with scaffold and lockfile; post #0 deliberately skipped (journaled).
 
 ## Self-check
 

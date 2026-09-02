@@ -1,7 +1,6 @@
 # Eval Sheet — 20-Rollout Pre-Registered Bar
 
-<!-- H5 stub — spec in README.md "Part 5 — Evaluation and the sim-to-real delta". -->
-<!-- Implement yourself. Claude scaffolds, reviews, and verifies only — see TEMPLATE.md execution contract. -->
+<!-- H5 stub — the exercise in README.md that names this file specifies it. -->
 
 | Rollout # | Success (Y/N) | Notes | Video filename |
 |---|---|---|---|

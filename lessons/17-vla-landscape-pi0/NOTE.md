@@ -1,6 +1,6 @@
 # NOTE — The VLA Landscape (Lesson 17)
 
-<!-- 2-3 pages total. See README.md "Part 1 — The comparative note" for full spec. -->
+<!-- At most 2 pages total. See the exercise in README.md that names this file. -->
 
 ## Model comparison table
 

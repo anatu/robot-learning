@@ -1,16 +1,16 @@
 # PROTOCOL — Comparative VLA Lab (Lesson 19)
 
 <!-- Commit this file BEFORE any GPU is rented or any training run starts — the git log must prove
-     the protocol predates every training run. See README.md "Part 0 — Protocol pre-registration". -->
+     the protocol predates every training run. See the exercise in README.md that names this file. -->
 
-## Trio + justification
+## Pair (+ optional third) and justification
 
 <!-- TODO: verify each candidate's model card + docs page + documented fine-tune entrypoint + VRAM
-     requirement; drop anything unverifiable; pick the trio and justify against Lesson 17's NOTE.md axes. -->
+     requirement; drop anything unverifiable; pick SmolVLA + X-VLA (third model optional) and justify against Lesson 17's NOTE.md axes. -->
 
 ## Budget
 
-<!-- TODO: recommend 4 A100-hours/model, one instance type for all three. -->
+<!-- TODO: recommend ~4 A100-hours/model (~8 GPU-h for the pair), one instance type for all models. -->
 
 ## Adaptation mechanism per model
 

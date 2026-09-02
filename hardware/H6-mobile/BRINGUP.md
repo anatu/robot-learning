@@ -1,7 +1,6 @@
 # Build + Bring-Up Log
 
 <!-- H6 stub — spec in README.md "Deliverables" (Build + bring-up log row) and Parts 1-2. -->
-<!-- Implement yourself. Claude scaffolds, reviews, and verifies only — see TEMPLATE.md execution contract. -->
 
 ## Pi setup
 

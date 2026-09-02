@@ -1,11 +1,11 @@
 # H2 — Real Teleop Data Collection
 
-Record and publish a 50-episode pick-place dataset on your own hardware — the raw material for every policy in H3–H5. Demo quality caps policy quality; this lesson is where that stops being a slogan and becomes a protocol.
+Record and publish a 50-episode pick-place dataset on your own hardware — the raw material for every policy in H3–H5. Demo quality caps policy quality; this lesson is where that stops being a slogan and becomes a protocol you can audit.
 
 | | |
 |---|---|
 | **Phase** | Hardware track |
-| **Time** | 1 session task design + rig lock-down (~2 h), 1–2 recording sessions (~2–3 h for 50+ episodes incl. resets), ~1 h card + writeup |
+| **Time** | 1 session task design + rig lock-down (~2 h), 1–2 recording sessions (~2–3 h for 50+ episodes incl. resets), ~1 h audit + card + writeup |
 | **Cost** | $0 |
 | **Prerequisites** | H1 (calibrated pair, cameras, teleop fluency), 01–02 (you know exactly what a valid v3 dataset looks like) |
 | **Feeds into** | H3 (ACT/DP train on this), H4 (SmolVLA fine-tune + eval task), H5 (demo buffer) |
@@ -16,11 +16,11 @@ After this lesson you can:
 
 1. **Design** a manipulation task whose reset, start distribution, and success criterion are defined precisely enough to be evaluated 20 trials at a time later.
 2. **Run** `lerobot-record` fluently: episode/reset phases, keyboard flow control, resume, and recovery from a crashed session.
-3. **Enforce** a written data-quality protocol — and articulate the *mechanism* by which each rule affects the trained policy.
-4. **Audit** your own dataset: episode stats, sync, coverage of the start distribution, and a failure log others can learn from.
+3. **Explain** the *mechanism* by which each data-quality rule changes the trained policy — and enforce the rules mechanically.
+4. **Predict and audit** your own dataset: episode stats, sync, coverage of the start distribution, and a failure log others can learn from.
 5. **Publish** a Hub dataset with a card a stranger could reproduce the setup from.
 
-## Background
+## Principles
 
 **Why the recording session decides everything downstream.** ACT and Diffusion Policy imitate; they don't filter or repair. Every hesitation becomes a policy hesitation (Lesson 14: pause states are attractors). Two grasp strategies across episodes hand a multimodal average to anything that can't model modes — and even generative heads pay for it in sample efficiency. Start positions you never demonstrated are OOD at eval time, and H3's ID/OOD protocol will charge you for them. The docs' rule of thumb is the right bar: **you should be able to do the task yourself looking only at the camera images.** If the object leaves both frames, so does the policy's ability to find it.
 
@@ -28,15 +28,25 @@ After this lesson you can:
 
 **Failed demos: pick a policy and write it down.** Two defensible options: (a) *curated* — re-record failures via `←`, dataset is successes only (right choice for H3's BC training); (b) *labeled* — keep failures, note episode indices in the card (extra positives/negatives for H5's reward classifier). Choose (a) unless you're already committed to H5; either way the card states the policy. What's not defensible is unlabeled failures mixed in silently.
 
+**The rig is part of the dataset.** Lighting, camera pose, and auto-exposure are features the policy silently learns. Anything that can drift between sessions is a distribution shift you cannot undo after the fact — so it gets fixed physically (witness marks, lamp-only lighting, locked UVC controls) and checked before every session.
+
+**Carry forward**
+
+- Do the task from the camera images alone, or the policy can't either.
+- One strategy, no pauses, demonstrated start distribution = evaluated start distribution.
+- The failed-demo policy is written before recording; silent mixing is the one indefensible choice.
+- Rig drift is a distribution shift; witness marks and a preflight checklist are the fix, not vigilance.
+- `--resume=true` counts *additional* episodes and needs `--dataset.root`.
+
 | Source | Read for |
 |---|---|
 | Tutorial §1.3 | the recording recipe this lesson instantiates (its Code 2 is v0.4-era — the commands below are the current form) |
 | [Recording docs](https://huggingface.co/docs/lerobot/il_robots) | flag reference, resume semantics, keyboard-backend caveats |
 | [HF "what makes a good dataset" post](https://huggingface.co/blog/lerobot-datasets#what-makes-a-good-dataset) | the community's accumulated data-quality folklore, cross-checked against your protocol |
 
-## Part 1 — Task and rig design (~2 h, no recording)
+## Exercise 1 — Task and rig design [Write]
 
-Decisions made here are frozen for H3–H5; changing the task after training means re-collecting.
+Tests objective 1: decisions made here are frozen for H3–H5; changing the task after training means re-collecting. Produces `TASK.md` and `PREFLIGHT.md`.
 
 1. **Task:** single pick-place — one graspable object (rigid, ≥ 3 cm, matte; a wooden cube is the classic) from a start zone into a fixed container. One behavior, one object, no distractors. Variation comes later (H4 probes it); it doesn't belong in the base dataset.
 2. **Start distribution — define it physically.** Tape a grid into the start zone (e.g. 3×3 cells over ~15×15 cm). Plan ~50 episodes ≈ 10 per position over ~5 grid cells (matching the docs' 10-per-location guidance). Log the cell for every episode as you record. H3's ID evaluation draws from these cells; OOD is the cells you deliberately held out — decide now which those are.
@@ -44,12 +54,16 @@ Decisions made here are frozen for H3–H5; changing the task after training mea
 4. **Lock the rig:** overhead camera on rigid mount framing start zone + container; wrist camera showing the fingers; desk lamp for constant lighting (kill the window — daylight drift between sessions is a distribution shift you can't undo); tape witness marks around the robot base, container, and camera positions so the rig can be re-staged exactly.
 5. **Kill camera auto-adjustment.** Auto-exposure and auto-white-balance change image statistics mid-session. Fix them via UVC controls where the model allows, and verify by comparing frame brightness at session start vs end.
 6. Write `PREFLIGHT.md` — run before *every* session, this lesson and later: power on → `lerobot-find-cameras opencv` and re-verify index↔camera map → witness marks aligned → lamp on, blinds closed → 30 s teleop warm-up → one throwaway episode, inspect both views.
+7. For each of the rules in Exercise 3, write one sentence in `TASK.md` naming the *mechanism* by which breaking it would change the trained policy (objective 3). "Because the docs say so" does not count.
 
-**✅ Checkpoint:** task spec (object, grid, per-cell episode counts, success sentence, failed-demo policy) written in `TASK.md` before any recording; a phone photo of the rig with witness marks visible.
+**✅ Checkpoint:** task spec (object, grid, per-cell episode counts, held-out cells, success sentence, failed-demo policy, per-rule mechanisms) written in `TASK.md` before any recording; a phone photo of the rig with witness marks visible.
 
-## Part 2 — Dress rehearsal (~30 min)
+## Exercise 2 — Dress rehearsal [Predict → Run]
 
-1. Record a 3-episode throwaway dataset with the real command:
+Tests objective 2 and the fps/keys assumptions your dataset will carry.
+
+1. **Write first:** the episode length in frames you expect for a clean demo at 30 fps, the camera keys and shapes the dataset should contain, and what the action trace should look like around the moment you press `→`.
+2. Record a 3-episode throwaway dataset with the real command:
    ```bash
    lerobot-record \
      --robot.type=so101_follower --robot.port=<f-port> --robot.id=H1_follower \
@@ -63,13 +77,17 @@ Decisions made here are frozen for H3–H5; changing the task after training mea
      --dataset.push_to_hub=false
    ```
    (Keyboard flow keys need the terminal focused; on macOS grant Accessibility permission per the docs.)
-2. Practice the full loop: task → `→` at completion → reset within 15 s → next episode. Then practice one `←` re-record on purpose.
-3. Load the rehearsal with `LeRobotDataset`, assert: fps 30, both camera keys present, episode lengths plausible, action/state traces smooth (no dropouts). Watch one episode's video: object visible in the overhead view *throughout*, grasp visible in the wrist view.
-4. Delete the rehearsal repo.
+3. Practice the full loop: task → `→` at completion → reset within 15 s → next episode. Then practice one `←` re-record on purpose.
+4. Load the rehearsal with `LeRobotDataset`, assert: fps 30, both camera keys present, episode lengths plausible, action/state traces smooth (no dropouts). Watch one episode's video: object visible in the overhead view *throughout*, grasp visible in the wrist view. Reconcile with step 1.
+5. Delete the rehearsal repo.
 
-**✅ Checkpoint:** full record → early-stop → reset → re-record cycle exercised; rehearsal data passes inspection; you can restage a reset in < 15 s.
+**✅ Checkpoint:** full record → early-stop → reset → re-record cycle exercised; rehearsal data passes inspection and matches your predicted shapes; you can restage a reset in < 15 s.
 
-## Part 3 — The recording sessions (2–3 h total)
+## Exercise 3 — The recording sessions [Predict → Run]
+
+Tests objective 3 under fatigue: the rules are binding because their violations are invisible until training.
+
+**Write first**, in `RESULTS.md`, before session 1: your planned per-cell counts after 50 episodes, the median and range of episode durations you expect, and how many episodes you expect to `←` per session. Exercise 4's audit reconciles these.
 
 The data-quality protocol, numbered and binding — deviations get logged, not rationalized:
 
@@ -81,39 +99,56 @@ The data-quality protocol, numbered and binding — deviations get logged, not r
 6. Rig frozen: no camera nudges, no lamp moves, no chair-through-frame. If anything moves, stop, re-stage from witness marks, note it in the failure log.
 7. Session cap ~30 episodes — teleop quality degrades with fatigue, and it shows in the data.
 
-Run Part 2's command with `--dataset.repo_id=<you>/so101_pickplace_50ep --dataset.num_episodes=30 --dataset.push_to_hub=true`. Second session: same command with `--resume=true --dataset.num_episodes=20 --dataset.root=<local-path>` (resume counts *additional* episodes — docs are explicit). Run `PREFLIGHT.md` first both times.
+Run Exercise 2's command with `--dataset.repo_id=<you>/so101_pickplace_50ep --dataset.num_episodes=30 --dataset.push_to_hub=true`. Second session: same command with `--resume=true --dataset.num_episodes=20 --dataset.root=<local-path>` (resume counts *additional* episodes — docs are explicit). Run `PREFLIGHT.md` first both times.
 
-**✅ Checkpoint (per session, before teardown):** episode count matches the sheet; last episode's video spot-checked; session sheet totals per start cell match the plan so far.
+**✅ Checkpoint (per session, before teardown):** episode count matches the sheet; last episode's video spot-checked; session sheet totals per start cell match the plan so far; every deviation from rules 1–7 has a line in the failure log.
 
-## Part 4 — Audit, card, publish (~1 h)
+## Exercise 4 — Audit [Build]
 
-1. `audit.py` against the final dataset: episode count ≥ 50; per-episode duration histogram (median 15–35 s, none at the 60 s cap); per-cell episode counts vs plan; frame-timestamp gaps (flag > 2× frame period — dropped frames); mean per-step joint delta per episode (outliers = jerky teleop worth watching).
+Tests objective 4: the audit is the dataset's evidence, and it is where Exercise 3's predictions meet the data. Spec for `audit.py` (an AI tool drafts it; `LeRobotDataset` + numpy):
+
+- Input: a repo id (local or Hub). Output: a printed report and `audit.json`.
+- Four checks: episode count ≥ 50; per-episode duration histogram (flag a median outside 15–35 s and any episode at the 60 s cap); per-cell episode counts vs the plan in `TASK.md` (cells come from your session sheet, e.g. a CSV of `episode_index, cell`); frame-timestamp gaps (flag > 2× frame period — dropped frames).
+- One diagnostic: mean per-step joint delta per episode (outliers = jerky teleop worth watching).
+- The check: runs against `<you>/h2_rehearsal`-style data without error, and its four verdicts match a by-hand count on 3 episodes.
+
+Then:
+
+1. Run `audit.py` on the final dataset; reconcile the duration histogram, per-cell counts, and `←` count with Exercise 3's predictions in `RESULTS.md`.
 2. Visual audit: [dataset visualizer](https://huggingface.co/spaces/lerobot/visualize_dataset) on 5 episodes — sync between cameras and motion, grasp visible in wrist view every time.
 3. Replay episode 0 on the physical arm as an end-to-end integrity test (arm reproduces the motion in the real scene):
    ```bash
    lerobot-replay --robot.type=so101_follower --robot.port=<f-port> --robot.id=H1_follower \
      --dataset.repo_id=<you>/so101_pickplace_50ep --dataset.episode=0
    ```
-4. Dataset card: task sentence, success criterion, episode count + duration stats, fps, camera layout **photo**, start-position grid diagram with per-cell counts, failed-demo policy, lighting setup, robot ids, LeRobot version. Bar: a stranger rebuilds your setup from the card alone.
-5. `FAILURES.md`: everything that went wrong — dropped frames, USB stalls, camera drift, calibration wobble, teleop fatigue effects — with what you did about each.
 
-**✅ Checkpoint:** audit script passes; visualizer renders; replay reproduces the motion; card live on the Hub.
+**✅ Checkpoint:** audit script passes all four checks; predictions reconciled; visualizer renders; replay reproduces the motion.
+
+## Exercise 5 — Card and failure log [Write]
+
+Tests objective 5: the stranger test, for the setup and for what went wrong.
+
+1. Dataset card: task sentence, success criterion, episode count + duration stats, fps, camera layout **photo**, start-position grid diagram with per-cell counts, failed-demo policy, lighting setup, robot ids, LeRobot version. Bar: a stranger rebuilds your setup from the card alone.
+2. `FAILURES.md`: everything that went wrong — dropped frames, USB stalls, camera drift, calibration wobble, teleop fatigue effects — with what you did about each. A clean session is evidence of an unobservant log.
+
+**✅ Checkpoint:** card live on the Hub; `FAILURES.md` has ≥ 5 concrete entries.
 
 ## Deliverables
 
 | Artifact | Acceptance criteria |
 |---|---|
 | Hub dataset `<you>/so101_pickplace_50ep` | ≥ 50 episodes, loads in `LeRobotDataset`, renders in the visualizer |
-| `TASK.md` + `PREFLIGHT.md` | task spec frozen before recording; checklist actually usable in 2 min |
+| `TASK.md` + `PREFLIGHT.md` | task spec frozen before recording, incl. per-rule mechanisms; checklist actually usable in 2 min |
 | Session sheets | per-episode start cell + notes, totals matching the dataset |
-| `audit.py` + output | the four automated checks, run against the published repo |
+| `audit.py` + `audit.json` | the four automated checks, run against the published repo |
 | Dataset card | passes the stranger test; includes rig photo + grid diagram |
-| `FAILURES.md` | ≥ 5 concrete entries (a clean session is evidence of an unobservant log) |
+| `FAILURES.md` | ≥ 5 concrete entries |
+| `RESULTS.md` | Exercise 2 and 3 predictions reconciled against the audit; rule deviations listed |
 
 ## Done when
 
 - [ ] 50+ episodes on the Hub, audit green, visualizer clean.
-- [ ] Start-position coverage matches the written plan cell-by-cell.
+- [ ] Start-position coverage matches the written plan cell-by-cell, and the predicted-vs-actual histogram is in `RESULTS.md`.
 - [ ] Episode 0 replays correctly on the arm.
 - [ ] Card + failure log published.
 - [ ] H3's ID/OOD split is already implied by your grid: demonstrated cells vs held-out cells, in writing.
@@ -137,7 +172,7 @@ Run Part 2's command with `--dataset.repo_id=<you>/so101_pickplace_50ep --datase
 | Replay diverges from the recorded scene | calibration drifted (transport, knock) since recording | recalibrate; witness-mark check; recalibration invalidates cross-session mixing — note it in the card |
 | Wrist view shows fingers but never the object | mount angle | re-aim before recording 50 episodes, not after |
 
-## Stretch
+## Going deeper
 
 Record a 10-episode *variation* set (second object, or the held-out grid cells) as a separate repo — H4's generalization probes want it, and collecting it now costs one warm session.
 

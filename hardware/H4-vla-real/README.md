@@ -5,7 +5,7 @@ Generalist policies meet your $400 robot: a foundation model zero-shot, your own
 | | |
 |---|---|
 | **Phase** | Hardware track |
-| **Time** | ~1 h zero-shot setup + trials, ~4 h cloud fine-tune (wall-clock), 2 × ~2 h eval sessions, ~2 h DAgger session + ~1 h retrain launch |
+| **Time** | ~1 h zero-shot setup + trials, ~4 h cloud fine-tune (wall-clock), 2 × ~1.5 h eval sessions, ~2 h DAgger session + ~1 h retrain launch |
 | **Cost** | ~$6–14 cloud GPU (SmolVLA LoRA fine-tune ~$3–8, DAgger retrain ~$3–6) |
 | **Prerequisites** | H2 (dataset + task), H3 (baselines + the pre-registered protocol you'll reuse verbatim), 18 (SmolVLA fine-tune recipe), 16 (async/RTC concepts) |
 | **Feeds into** | 22 capstone option 1 (this DAgger loop, iterated), 21's hardware echo |
@@ -14,19 +14,28 @@ Generalist policies meet your $400 robot: a foundation model zero-shot, your own
 
 After this lesson you can:
 
-1. **Deploy** a pretrained VLA zero-shot on hardware it wasn't tuned for, and interpret what its behavior says about community-data pretraining.
-2. **Fine-tune** SmolVLA on 50 real episodes and beat (or honestly fail to beat) single-task specialists on their home turf.
-3. **Probe** what the VLM backbone buys: instruction paraphrase, object attributes, distractors — quantified, not vibed.
-4. **Run** a DAgger-style correction loop end-to-end: targeted intervention data → aggregate → fine-tune → re-evaluate.
+1. **Interpret** a pretrained VLA's zero-shot behavior on hardware it wasn't tuned for as a statement about its pretraining distribution.
+2. **Predict and then measure** whether SmolVLA fine-tuned on 50 real episodes beats single-task specialists on their home turf, and where.
+3. **Quantify** what the VLM backbone buys — paraphrase, attributes, distractors — against an ACT control.
+4. **Run** a DAgger-style correction loop end-to-end and judge, with CIs, whether it moved the targeted failure mode.
 5. **Defend** a claim about when a generalist beats a specialist at the 50-episode scale, with your own table as evidence.
 
-## Background
+## Principles
 
-**Why zero-shot might work at all.** MolmoAct 2 (Ai2, May 2026) trains on community SO-101 data from the Hub — your robot's embodiment, camera conventions, and task family are *in its pretraining distribution*. Zero-shot success on your rig is a statement about that distribution, not magic. It's also post-cutoff for this course's primary sources: before Part 1, pull the current model card and LeRobot integration notes (the scaffold expectation: it runs via `lerobot-rollout` with built-in calibration correction — verify the exact flags against the card; don't trust this README's memory of them).
+**Why zero-shot might work at all.** MolmoAct 2 (Ai2, May 2026) trains on community SO-101 data from the Hub — your robot's embodiment, camera conventions, and task family are *in its pretraining distribution*. Zero-shot success on your rig is a statement about that distribution, not magic. It's also post-cutoff for this course's primary sources: before Exercise 1, pull the current model card and LeRobot integration notes (the scaffold expectation: it runs via `lerobot-rollout` with built-in calibration correction — verify the exact flags against the card; don't trust this README's memory of them).
 
 **Fine-tune vs specialist.** H3's ACT saw 50 episodes of one task from scratch. SmolVLA-ft sees the same 50 episodes on top of web-scale vision-language pretraining plus community robot data. The bet: pretraining buys robustness (OOD positions, distractors, paraphrase) more than peak ID success. Your table tests the bet. Latency is the tax: SmolVLA inference is heavier than ACT's, so deployment uses Lesson 16's machinery — `--inference.type=rtc` (real-time chunking) is the documented path for smooth VLA execution.
 
 **The DAgger loop.** BC fails on compounding drift into states demos never covered (Lesson 12). DAgger's fix: collect *on the learner's own distribution* — run the policy, intervene at incipient failure, record the recovery, fine-tune on combined data. LeRobot ships this as `lerobot-rollout --strategy.type=dagger` with the SO-101 leader as the intervention device: **pause** (policy freezes, leader motors to match follower pose) → **take over** (leader torque off, you demonstrate recovery + correction, frames recorded) → **return control** (policy resumes mid-episode). Recovery *then* correction, per RaC (Hu et al. 2025); π*0.6/RECAP is this loop at industrial scale — Lesson 20 gives it the full treatment.
+
+**What N=20 can and can't tell you.** A 95% Wilson interval on 14/20 spans roughly 48–85%. Aggregate ID success will rarely separate two decent policies; the *pattern* across conditions (ID vs OOD, paraphrase vs attribute) and the failure taxonomy will. Write predictions per cell, not per policy.
+
+**Carry forward**
+
+- Zero-shot success is a measurement of pretraining coverage, not of generalization in the abstract.
+- Pretraining is expected to show up as robustness across conditions before it shows up as peak ID success.
+- Intervene at *incipient* failure so the dataset contains the states the policy actually reaches, then a clean recovery from them.
+- At N=20 per cell, claim improvement only when the targeted failure class shrank *and* nothing else regressed.
 
 | Source | Read for |
 |---|---|
@@ -35,16 +44,21 @@ After this lesson you can:
 | Lesson 18 `RESULTS.md` (yours) | your LoRA config, VRAM budget, and eval deltas — the fine-tune recipe to transfer |
 | Kelly et al. 2019 (HG-DAgger); Hu et al. 2025 (RaC) | why *gated human* intervention beats naive DAgger; recovery/correction decomposition |
 
-## Part 1 — Zero-shot MolmoAct 2 (~1 h)
+## Exercise 1 — Zero-shot MolmoAct 2 [Predict → Run]
+
+Tests objective 1: what community pretraining covers.
 
 1. Research pass (30 min, before touching the robot): current model card, LeRobot deploy path, prompt/instruction format, calibration-correction mechanism. Write the working invocation into `RESULTS.md` *before* running it.
-2. Smoke rollout on the H2 task, e-stop in reach. Watch three episodes before judging — zero-shot failure modes are often systematic (consistent offset, wrong grasp height) rather than random, and the difference matters for the writeup.
-3. Formal trials: **10 trials, ID condition, H3's protocol verbatim** (same grid sequence, same success sentence, same taxonomy + video per failure).
-4. Novel-task probe: 5 trials on a task you never demonstrated (e.g. "push the cube to the left edge"). Any success here is pretraining generalization, worth documenting carefully.
+2. **Write first:** your predicted ID success out of 10, and whether failures will be systematic (consistent offset, wrong grasp height) or random. State why.
+3. Smoke rollout on the H2 task, e-stop in reach. Watch three episodes before judging — zero-shot failure modes are often systematic rather than random, and the difference matters for the writeup.
+4. Formal trials: **10 trials, ID condition, H3's protocol verbatim** (same grid sequence, same success sentence, same taxonomy + video per failure).
+5. Novel-task probe: **3 trials** on a task you never demonstrated (e.g. "push the cube to the left edge"). Any success here is pretraining generalization, worth documenting carefully.
 
-**✅ Checkpoint:** 10 protocol trials + 5 novel-task trials logged with videos; the invocation that actually worked recorded verbatim.
+**✅ Checkpoint:** 10 protocol trials + 3 novel-task trials logged with videos; the invocation that actually worked recorded verbatim; prediction and outcome side by side.
 
-## Part 2 — Fine-tune SmolVLA on your data (cloud, ~4 h wall-clock)
+## Exercise 2 — Fine-tune SmolVLA on your data [Build]
+
+Tests objective 2: the pretraining-plus-50-episodes bet. Cloud, ~4 h wall-clock.
 
 1. Lesson 18's LoRA recipe pointed at your dataset:
    ```bash
@@ -66,24 +80,36 @@ After this lesson you can:
      --task="Pick up the cube and place it in the bin" --duration=60
    ```
    Log the achieved control rate; if the Mac can't hold it, serve inference from a cloud GPU per Lesson 16 and note the setup in the trial sheet.
-4. Formal trials: **20 ID + 20 OOD-position**, H3 protocol verbatim, interleaved A/B with nothing (H3 numbers stand as recorded — but rig must match H3's witness marks; preflight proves it).
 
-**✅ Checkpoint:** fine-tuned checkpoint on Hub; 40 protocol trials logged; the four-way ID table (MolmoAct2-zs / SmolVLA-ft / ACT / DP) now fills.
+**✅ Checkpoint:** fine-tuned checkpoint on Hub; mid-training sanity trials logged; deployment runs at a recorded control rate.
 
-## Part 3 — Language & robustness probes (~1.5 h)
+## Exercise 3 — The four-way table [Predict → Run]
 
-What does the VLM backbone buy? 5 trials per cell, SmolVLA-ft vs ACT (ACT ignores language — it's the control):
+Tests objective 2 as a measurement.
 
-1. **Paraphrase:** "put the block in the container", "grab the cube and drop it in the bin", one deliberately odd phrasing.
-2. **Attribute change:** swap cube color (unseen color, same shape/size).
-3. **Distractor:** H3's OOD-distractor condition, reused.
-4. Score against the same success criterion; every run on video. Report per-cell success + a one-line mechanism hypothesis per surprising cell (e.g. paraphrase-robust but color-brittle → language conditioning works, visual features overfit to training palette).
+1. **Write first**, per cell of the table MolmoAct2-zs / SmolVLA-ft / ACT / DP × {ID, OOD-position}: predicted success out of 20 (10 for zero-shot), and the one condition where you expect the generalist and the specialists to *diverge*. H3's ACT/DP numbers are already known — predict only the new rows, and predict the ID-vs-OOD gap for SmolVLA-ft relative to ACT's.
+2. Formal trials: **20 ID + 20 OOD-position**, H3 protocol verbatim, interleaved A/B with nothing (H3 numbers stand as recorded — but rig must match H3's witness marks; preflight proves it).
+3. Fill the table with Wilson CIs; reconcile against your predictions cell by cell. A cell that surprised you gets a mechanism hypothesis.
 
-**✅ Checkpoint:** probe matrix (condition × policy) complete, 5 trials per cell, videos labeled.
+**✅ Checkpoint:** 40 protocol trials logged; the four-way table complete with CIs; predictions and reconciliation in `RESULTS.md`.
 
-## Part 4 — One DAgger iteration (~3 h + retrain)
+## Exercise 4 — Language & robustness probes [Predict → Run]
 
-1. Pick the target: your fine-tune's dominant failure class from Part 2's taxonomy histogram. The loop aims at *that*, not at general data volume.
+Tests objective 3: what the VLM backbone buys. **3 conditions × 5 trials per cell**, SmolVLA-ft vs ACT (ACT ignores language — it's the control).
+
+1. **Write first:** for each condition, which policy you expect to be hurt and why (language conditioning vs visual features vs neither).
+2. **Paraphrase:** "put the block in the container", "grab the cube and drop it in the bin", one deliberately odd phrasing.
+3. **Attribute change:** swap cube color (unseen color, same shape/size).
+4. **Distractor:** H3's OOD-distractor condition, reused.
+5. Score against the same success criterion; every run on video. Report per-cell success + a one-line mechanism hypothesis per surprising cell (e.g. paraphrase-robust but color-brittle → language conditioning works, visual features overfit to training palette).
+
+**✅ Checkpoint:** probe matrix (3 conditions × 2 policies) complete, 5 trials per cell, videos labeled; predictions reconciled.
+
+## Exercise 5 — One DAgger iteration [Predict → Run]
+
+Tests objective 4: targeted on-policy data moves a specific failure mode. ~3 h + retrain.
+
+1. Pick the target: your fine-tune's dominant failure class from Exercise 3's taxonomy histogram. The loop aims at *that*, not at general data volume. **Write first:** the failure class, its current count out of 20, and the count you expect after one iteration — plus whether you expect any *other* class to grow.
 2. Collect ~15 intervention episodes:
    ```bash
    lerobot-rollout --strategy.type=dagger --inference.type=rtc \
@@ -96,26 +122,33 @@ What does the VLM backbone buy? 5 trials per cell, SmolVLA-ft vs ACT (ACT ignore
      --strategy.num_episodes=15
    ```
    The script prints its control bindings at launch — those are authoritative over any doc. Protocol per intervention: let it fail *incipiently* (not fully), pause, take over, **recover to a good state, then correct cleanly**, return control. Log interventions per episode.
-3. Fine-tune from the Part 2 checkpoint on the combined data (base 50 + dagger 15; the docs' flow — `--policy.pretrained_path=<part2 checkpoint>`, fewer steps, e.g. ~20k). ~$3–6.
+3. Fine-tune from the Exercise 2 checkpoint on the combined data (base 50 + dagger 15; the docs' flow — `--policy.pretrained_path=<exercise-2 checkpoint>`, fewer steps, e.g. ~20k). ~$3–6.
 4. Re-evaluate: **20 ID trials**, protocol verbatim, plus 10 trials concentrated on the targeted failure condition. Before/after with CIs — at this N, claim improvement only if the targeted failure class shrank *and* overall ID didn't regress.
 
-**✅ Checkpoint:** one full loop closed: policy → interventions → retrain → re-eval, with before/after numbers on the targeted failure mode.
+**✅ Checkpoint:** one full loop closed: policy → interventions → retrain → re-eval, with before/after numbers on the targeted failure mode and the prediction beside them.
+
+## Exercise 6 — The verdict [Decide]
+
+Tests objective 5. In `RESULTS.md`, state the generalist-vs-specialist claim you now hold at the 50-episode scale, with the table rows that support it and the rows that cut against it. Name the confound at N=20 that your claim is most exposed to.
+
+**✅ Checkpoint:** one claim, supporting rows, opposing rows, one named confound.
 
 ## Deliverables
 
 | Artifact | Acceptance criteria |
 |---|---|
 | Four-way comparison table | MolmoAct2-zs / SmolVLA-ft / ACT / DP × ID (+ OOD where run), Wilson CIs, N stated per cell |
-| Probe matrix + videos | Part 3's condition × policy grid, mechanism hypotheses included |
+| Probe matrix + videos | Exercise 4's condition × policy grid, mechanism hypotheses included |
 | `<you>/h4_dagger_r1` dataset + retrained checkpoint | intervention episodes visible in the visualizer with autonomous + human segments |
 | Before/after DAgger table | targeted failure class + overall ID, both with CIs; honest verdict |
-| `RESULTS.md` | the generalist-vs-specialist claim you now hold, with the table rows that support it and the ones that cut against it |
+| `RESULTS.md` | predictions vs outcomes for Exercises 1, 3, 4, 5; the Exercise 6 claim with its supporting and opposing rows |
 
 ## Done when
 
 - [ ] Four-way ID table complete at ≥ 10 trials/cell (20 for the fine-tune), H3 protocol throughout.
-- [ ] Language/robustness probes quantify ≥ 3 conditions against the ACT control.
+- [ ] Language/robustness probes quantify 3 conditions against the ACT control.
 - [ ] One DAgger iteration measurably moved the targeted failure mode, or the writeup explains why not with video evidence.
+- [ ] Every [Predict → Run] has its prediction written before the trials and reconciled after.
 - [ ] Zero-shot behavior documented well enough that a reader learns something about community-pretraining coverage.
 
 ## Self-check
@@ -136,6 +169,11 @@ What does the VLM backbone buy? 5 trials per cell, SmolVLA-ft vs ACT (ACT ignore
 | Retrained policy worse overall | correction data swamped base behavior (too many steps / too high LR on 15 episodes) | fewer steps, keep base 50 in the mix (combined dataset, per docs), re-check LoRA rank |
 | Four-way table contradicts itself across sessions | rig drift between H3's and H4's sessions | preflight + witness marks; if drift is real, rerun the stale baseline rather than footnoting it |
 | Any post-cutoff invocation fails | this README's expectations, not the tool | model card / `--help` / LeRobot release notes are authoritative; record what actually worked |
+
+## Going deeper
+
+- **Second DAgger iteration.** Repeat Exercise 5 targeting the new dominant failure class; plot success per iteration. This is Capstone option 1's spine — two points on the curve tell you whether it saturates.
+- **Full probe matrix.** Extend Exercise 4 to 5 trials × {paraphrase ×3, attribute, distractor, lighting} and add MolmoAct2-zs as a third column.
 
 ## References
 

@@ -1,4 +1,3 @@
-<!-- Lesson 13 derivation dossier stub — spec in README.md "Part 1 — Obligation A", "Part 2 — Obligation B", "Part 3 — Obligation C". Implement yourself. Claude scaffolds, reviews, and verifies only — see TEMPLATE.md execution contract. -->
 
 # Derivation Dossier
 

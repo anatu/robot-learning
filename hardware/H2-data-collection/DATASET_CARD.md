@@ -1,7 +1,6 @@
 # Dataset Card
 
-<!-- H2 stub — spec in README.md "Part 4 — Audit, card, publish" step 4. -->
-<!-- Implement yourself. Claude scaffolds, reviews, and verifies only — see TEMPLATE.md execution contract. -->
+<!-- H2 stub — the exercise in README.md that names this file specifies it. -->
 
 ## Task sentence
 

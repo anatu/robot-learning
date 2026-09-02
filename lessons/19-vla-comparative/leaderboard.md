@@ -1,6 +1,6 @@
 # Leaderboard — Comparative VLA Lab (Lesson 19)
 
-<!-- See README.md "Part 3 — Analysis". No cell may say "TODO" in the final version. -->
+<!-- See the exercise in README.md that names this file. No cell may say "TODO" in the final version. -->
 
 ## Leaderboard
 
@@ -27,3 +27,8 @@
 
 <!-- TODO: one result that contradicts the Part 0 protocol's expectations, plus the tested follow-up
      (<= 30 lines or <= 30 min GPU) that tests your explanation. -->
+
+## Threats to validity
+
+<!-- Mandatory. Name >= 3 real threats (single dataset, single budget point, adaptation-recipe maturity
+     varies by model, sim-benchmark overfitting, ...) and for each, which conclusions above survive it. -->
