@@ -1,6 +1,6 @@
 # H6 — Mobile Manipulation: LeKiwi → XLeRobot (Stretch)
 
-Put your SO-101 on wheels: a holonomic base, a distributed robot (Pi on the robot, brain on your Mac), a mobile fetch-and-carry dataset, and a trained policy whose action space now includes the base. The build-in-public series ends with a robot that crosses the room on command.
+This lesson puts the SO-101 on a wheeled base and turns it into a distributed robot: the motors and cameras hang off a Raspberry Pi on the base, the teleoperation and training clients run on your Mac, and the two communicate over a wireless link. You will derive the kinematics of the holonomic base, bring the distributed system up, record a fetch-and-carry dataset whose action space now includes the base, and train and evaluate a policy that coordinates driving and manipulation. The lesson ends with a robot that crosses the room and retrieves an object on command, and along the way it surfaces a class of data-quality problem, network latency, that fixed-base work never encounters.
 
 | | |
 |---|---|
@@ -14,28 +14,42 @@ Put your SO-101 on wheels: a holonomic base, a distributed robot (Pi on the robo
 
 After this lesson you can:
 
-1. **Bring up** a distributed robot: motors + cameras on a Pi host, teleop and recording clients on the Mac, ZeroMQ in between.
-2. **Derive** a 3-omniwheel holonomic base's wheel-velocity kinematics, explain why it translates and rotates independently, and predict where its dead reckoning drifts.
-3. **Collect** mobile-manipulation data with a 9-D action space (6 arm + 3 base) and state what changes vs fixed-base data doctrine.
-4. **Train and evaluate** a policy that coordinates base and arm on a fetch-and-carry task.
-5. **Diagnose** network-induced data-quality problems (latency, jitter) that fixed-base work never surfaces.
+1. **Bring up** a distributed robot, with motors and cameras on a Pi host, teleoperation and recording clients on the Mac, and ZeroMQ carrying observations and actions between them.
+2. **Derive** the wheel-velocity kinematics of a three-omniwheel holonomic base, explain why it can translate and rotate independently, and predict where its dead reckoning will drift.
+3. **Collect** mobile-manipulation data with a nine-dimensional action space (six arm, three base), and state what changes relative to the fixed-base data doctrine of H2.
+4. **Train and evaluate** a policy that coordinates the base and the arm on a fetch-and-carry task.
+5. **Diagnose** network-induced data-quality problems, latency and jitter, that fixed-base work never surfaces.
 
 ## Principles
 
-**The architecture is the lesson.** LeKiwi runs a *host* process on a Raspberry Pi 5 bolted to the base (motor bus + both cameras plug into the Pi) and a *client* on your Mac (leader arm + keyboard). Observations stream Pi→Mac, actions Mac→Pi over ZeroMQ on WiFi. Teleop latency is therefore a *network* property — every glitch lands in your dataset as a teleop artifact, which is why this lesson's data discipline adds a latency budget to H2's rules. (A wired variant exists — everything runs on the laptop — killing the latency issue and the mobility; the docs cover both.)
+### A distributed robot
 
-**Holonomic base.** Three omniwheels at 120°: wheel speeds map linearly to body-frame $(v_x, v_y, \omega)$ — the base translates in any direction while rotating freely. For wheel $i$ at angle $\theta_i$ from the body x-axis, radius $R$ from center, wheel radius $r$, the wheel's tangential speed is $r\,\dot\phi_i = -\sin\theta_i\, v_x + \cos\theta_i\, v_y + R\,\omega$; stacking three rows gives a $3\times3$ matrix that is invertible whenever the three $\theta_i$ are distinct — that invertibility *is* holonomy. A differential drive has only two independent wheel speeds for three body DoF, so it cannot. The wheel motors are STS3215s on the *same* bus as the arm, IDs 7/8/9, one control board for all nine motors; wheels need no calibration (continuous rotation — no range to find).
+LeKiwi runs as two processes on two machines. A host process on a Raspberry Pi 5 bolted to the base owns the motor bus and both cameras. A client process on your Mac owns the leader arm and the keyboard. Observations stream from the Pi to the Mac and actions stream back, over ZeroMQ on WiFi. Teleoperation latency is therefore a property of the network rather than of the robot, and every glitch in that network lands in your dataset as a teleoperation artifact: a frame where the operator's command arrived late looks, to a learning algorithm, exactly like a frame where the operator hesitated. This is why the data discipline in this lesson adds a latency budget to H2's rules. A wired variant exists, in which everything runs on the laptop; it removes the latency problem and also the mobility, and the documentation covers both.
 
-**One stack, new embodiment.** `--robot.type=lekiwi` gives a 9-D action space; record/train/eval are the same `LeRobotDataset` → `lerobot-train` → rollout pipeline as H2/H3. That continuity — new robot, zero new learning infrastructure — is the point of the LeRobot abstraction, and this lesson is its proof.
+### The holonomic base
 
-**Task framing.** Fetch-and-carry = navigate to table B → grasp → carry → place at table A. It decomposes into phases with different demands (driving precision vs manipulation precision), which makes it the right first mobile task: failures localize cleanly.
+The base has three omniwheels mounted at 120° intervals. Each omniwheel drives along its own axis while rolling freely sideways on its rollers, so the three wheel speeds together determine the body-frame velocity $(v_x, v_y, \omega)$ linearly. For wheel $i$ mounted at angle $\theta_i$ from the body $x$-axis, at distance $R$ from the centre, with wheel radius $r$, the wheel's tangential speed is
+
+$$r\,\dot\phi_i = -\sin\theta_i\, v_x + \cos\theta_i\, v_y + R\,\omega .$$
+
+Stacking the three rows gives a $3\times3$ matrix from body velocity to wheel speeds. That matrix is invertible whenever the three mounting angles are distinct, and its invertibility is what holonomy means: any body velocity, including pure sideways translation and pure rotation, can be produced by some combination of wheel speeds. A differential-drive base has only two independent wheel speeds for three body degrees of freedom, so its matrix cannot be inverted and it cannot translate sideways without first turning.
+
+Dead reckoning integrates the wheel speeds through this matrix to estimate position. The estimate drifts because the matrix describes ideal rolling; wheel slip and roller compliance both move the base by amounts the matrix never sees, and the errors accumulate. The wheel motors are STS3215 servos on the same bus as the arm, with IDs 7, 8 and 9, and one control board serves all nine motors. The wheels need no calibration, because they rotate continuously and have no range to find.
+
+### One software stack, a new embodiment
+
+Setting `--robot.type=lekiwi` gives a nine-dimensional action space, and recording, training and evaluation go through the same `LeRobotDataset`, `lerobot-train`, and rollout pipeline as H2 and H3. Nothing in the learning infrastructure changes when the embodiment does. That continuity is what the LeRobot abstraction promises, and this lesson tests whether the promise holds.
+
+### The task
+
+Fetch-and-carry means navigating to table B, grasping an object, carrying it, and placing it at table A. The task decomposes into phases with different demands, driving precision in some and manipulation precision in others, which makes it the right first mobile task: when a trial fails, the failure can be attributed to a phase.
 
 **Carry forward**
 
-- On a distributed robot, network latency is a data-quality variable; budget it and gate episodes on it.
-- Holonomy is a rank condition on the wheel-to-body map; dead reckoning drifts because that map integrates slip it cannot see.
-- Phase consistency in mobile demos plays the role grasp consistency played in H2.
-- A new embodiment costs a config, not a pipeline.
+- On a distributed robot, network latency is a data-quality variable, because a late command is indistinguishable from an operator's hesitation in the recorded data; budget the latency and gate episodes on it.
+- Holonomy is a rank condition on the wheel-to-body velocity map, and dead reckoning drifts because that map integrates ideal rolling while the real base slips.
+- Phase consistency in mobile demonstrations plays the role that grasp consistency played in H2: a policy trained on demonstrations with varying phase order has to learn a decision the demonstrator never made deliberately.
+- A new embodiment costs a configuration, not a new pipeline, and that is the property of the software stack worth verifying.
 
 | Source | Read for |
 |---|---|
@@ -43,72 +57,72 @@ After this lesson you can:
 | [SIGRobotics LeKiwi repo](https://github.com/SIGRobotics-UIUC/LeKiwi) | BOM, printed parts, base Assembly.md |
 | xlerobot.readthedocs.io | the upgrade path docs (community-maintained — expect to read issues; verify current state before buying parts) |
 
-## Exercise 1 — Omniwheel kinematics [Derive]
+## Exercise 1 — Derive the omniwheel kinematics [Derive]
 
-Tests objective 2, before any hardware.
+Before any hardware arrives, you work out the base's kinematics on paper and use them to predict how the base will misbehave. This exercise tests objective 2, and it produces two things that later exercises check: the inverse matrix that tells you which wheels turn for each unit body motion, and a prediction about dead-reckoning drift.
 
-1. On paper: write the $3\times3$ wheel-to-body matrix for wheels at $\theta_i \in \{90°, 210°, 330°\}$ (check the docs' mounting diagram and use its convention), invert it, and read off which wheels turn for pure $+v_x$, pure $+v_y$, and pure $+\omega$.
-2. Predict the drift mechanism: name two physical effects the matrix cannot represent (wheel slip; roller compliance) and which of $(v_x, v_y, \omega)$ each corrupts most.
-3. Put both in `RESULTS.md`; Exercise 4's replay-drift measurement checks the prediction.
+1. Write the $3\times3$ wheel-to-body matrix for wheels at $\theta_i \in \{90°, 210°, 330°\}$ (check the documentation's mounting diagram and use its convention), invert it, and read off which wheels turn for pure $+v_x$, pure $+v_y$, and pure $+\omega$.
+2. Predict the drift mechanism. Name two physical effects the matrix cannot represent (wheel slip and roller compliance are the two to consider) and say which of $(v_x, v_y, \omega)$ each corrupts most.
+3. Record both in `RESULTS.md`. The replay-drift measurement in Exercise 4 checks the prediction.
 
-**✅ Checkpoint:** the matrix, its inverse, and the three unit-motion wheel patterns are written down; a drift prediction is on record.
+**✅ Checkpoint:** the matrix, its inverse, and the three unit-motion wheel patterns are written down, and a drift prediction is on record.
 
-## Exercise 2 — Build and Pi setup [Build]
+## Exercise 2 — Assemble the base and set up the Pi [Build]
 
-Tests objective 1's host side. ~1 session.
+In this exercise you build the base, mount your existing follower arm on it, and bring up the Pi as the robot's host. This is the host side of objective 1. Budget one session.
 
-1. Order early (lead time): LeKiwi kit, Pi 5 + SD card, battery per BOM.
-2. Pi: flash OS, enable SSH, verify `ssh pi@<ip>` from the Mac; install LeRobot per the docs + `pip install -e ".[lekiwi]"` (Feetech SDK + ZeroMQ). Same install with the extra on the Mac.
-3. Assemble the base (SIGRobotics Assembly.md); mount your existing SO-101 follower on it; wire all nine motors to the one control board; mount wrist + front cameras to the Pi.
-4. Motor setup — arm IDs 6→1 then wheels 9/8/7, one script run on the Pi:
+1. Order early, because of lead time: the LeKiwi kit, a Pi 5 with an SD card, and a battery per the bill of materials.
+2. Set up the Pi: flash the OS, enable SSH, and verify `ssh pi@<ip>` from the Mac. Install LeRobot per the documentation with `pip install -e ".[lekiwi]"`, which brings in the Feetech SDK and ZeroMQ. Do the same install with the same extra on the Mac.
+3. Assemble the base following the SIGRobotics Assembly.md, mount your existing SO-101 follower on it, wire all nine motors to the single control board, and mount the wrist and front cameras to the Pi.
+4. Set the motor IDs, arm 6→1 and then wheels 9/8/7, in one run of the setup script on the Pi:
    ```bash
    lerobot-setup-motors --robot.type=lekiwi --robot.port=<port-on-pi>
    ```
-   Wheel mounting positions must match the docs' ID diagram — swapped wheel IDs make the base drive sideways-wrong later (your Exercise 1 inverse tells you exactly how).
-5. Calibrate the arm (on the Pi via SSH; wheels skip calibration): `lerobot-calibrate --robot.type=lekiwi --robot.id=H6_kiwi`. Leader stays Mac-side with its H1 calibration.
+   The wheel mounting positions must match the documentation's ID diagram. If two wheel IDs are swapped, the base will drive in the wrong direction for a given key, and your Exercise 1 inverse tells you exactly which direction.
+5. Calibrate the arm on the Pi over SSH; the wheels skip calibration: `lerobot-calibrate --robot.type=lekiwi --robot.id=H6_kiwi`. The leader arm stays on the Mac with its H1 calibration.
 
-**✅ Checkpoint:** SSH works headless; all 9 motors enumerate; arm calibration values sane (H1's audit habit); base rolls freely by hand, power off.
+**✅ Checkpoint:** SSH works headless; all nine motors enumerate; the arm calibration values are sane by H1's audit standard; the base rolls freely by hand with the power off.
 
-## Exercise 3 — Distributed bring-up [Predict → Run]
+## Exercise 3 — Bring up the distributed system [Predict → Run]
 
-Tests objectives 1 and 5: the network is now inside your control loop.
+Here you run the host and client processes, teleoperate the base and arm together, and measure the network that now sits inside your control loop. The exercise tests objectives 1 and 5. The prediction concerns the network, because it is the component you have not worked with before and the one most likely to surprise you.
 
-1. **Write first:** your predicted median Pi↔Mac ping on your WiFi, and whether you expect spikes > 200 ms in 5 minutes. Predict which teleop channel (arm vs base) will show the first visible stutter and why.
-2. Host on the Pi:
+1. Before starting, write down your predicted median round-trip ping between the Pi and the Mac on your WiFi, whether you expect any spikes above 200 ms within five minutes, and which teleoperation channel, arm or base, you expect to show the first visible stutter and why.
+2. Start the host on the Pi:
    ```bash
    python -m lerobot.robots.lekiwi.lekiwi_host --robot.id=H6_kiwi
    ```
-   Client on the Mac: the docs' `examples/lekiwi/teleoperate.py` with `remote_ip` set (expect the `Connected to remote robot at tcp://<ip>:5555 ... video at :5556` line).
-3. Controls: leader arm drives the arm; keyboard drives the base — W/A/S/D translate, Z/X rotate, R/F cycle speed modes (slow 0.1 m/s / medium 0.25 / fast 0.4). Note the docs' caveat: base keyboard teleop needs a real key backend (macOS: grant Terminal Input Monitoring; not headless).
-4. **Measure the network before trusting it:** ping Pi↔Mac over your WiFi (target: median < 20 ms, no multi-hundred-ms spikes over 5 min); then a 60 s teleop log timing the client loop — spikes here are future dataset artifacts. If ugly: dedicated hotspot/AP, or accept the wired variant. Reconcile against step 1.
-5. Practice 20 minutes at slow speed: figure-eights, doorway alignment, drive-then-grasp transitions. Two-input teleop (hand on leader, hand on keys) is a genuine skill — budget for it.
-6. Battery discipline: log runtime from full charge; brownout on the Pi corrupts sessions — stop sessions at a voltage/time margin, and never let the Pi die mid-recording.
+   Start the client on the Mac using the documentation's `examples/lekiwi/teleoperate.py` with `remote_ip` set. Expect the line `Connected to remote robot at tcp://<ip>:5555 ... video at :5556`.
+3. The controls are as follows. The leader arm drives the arm. The keyboard drives the base: W/A/S/D translate, Z/X rotate, and R/F cycle the speed modes (slow 0.1 m/s, medium 0.25 m/s, fast 0.4 m/s). Note the documentation's caveat that base keyboard teleoperation needs a real key backend; on macOS, grant Terminal the Input Monitoring permission, and do not expect it to work headless.
+4. Measure the network before trusting it. Ping between the Pi and the Mac over your WiFi, with a target of a median below 20 ms and no spikes of several hundred milliseconds over five minutes. Then record a 60-second teleoperation log that times the client loop; spikes in that log are future dataset artifacts. If the numbers are bad, use a dedicated hotspot or access point, or accept the wired variant. Reconcile the measurements against your prediction from step 1.
+5. Practise for twenty minutes at slow speed: figure-eights, doorway alignment, and drive-then-grasp transitions. Two-input teleoperation, with one hand on the leader and one on the keys, is a genuine skill and needs time budgeted for it.
+6. Establish battery discipline. Log the runtime from a full charge. A brownout on the Pi corrupts a session, so stop sessions at a voltage or time margin and never let the Pi die during a recording.
 
-**✅ Checkpoint:** smooth teleop at medium speed with live video; network log saved and within budget (or the wired decision recorded); you can dock the base at a table and grasp within ~2 min.
+**✅ Checkpoint:** teleoperation is smooth at medium speed with live video; the network log is saved and within budget, or the decision to go wired is recorded; you can dock the base at a table and grasp within about two minutes.
 
-## Exercise 4 — Mobile dataset [Write] + [Predict → Run]
+## Exercise 4 — Record the mobile dataset [Write] + [Predict → Run]
 
-Tests objectives 3 and 2 (the drift prediction).
+In this exercise you write the task specification, record the dataset under H2's protocol with three mobile amendments, and measure dead-reckoning drift by replaying an episode. The exercise tests objective 3 and checks the drift prediction from Exercise 1.
 
-1. Task spec, H2 style, frozen in `TASK.md`: object on table B start zone (taped grid, 3 positions), carry to bin on table A; base start pose taped; success sentence; < 90 s episodes. Floor markers make base starts repeatable — dead reckoning won't.
-2. H2's protocol carries over with three mobile amendments: (a) *phase consistency* — same phase order every episode (drive → grasp → drive → place), no mid-drive grasps; (b) *latency gate* — abort/re-record any episode with a visible teleop stutter; (c) *camera framing* — front camera must see the destination table during driving phases (the "do the task from camera images alone" rule now covers navigation).
-3. Record 40–50 episodes via the docs' `examples/lekiwi/record.py` flow (set `remote_ip`, `repo_id`, `task`), ~25/session. H2 preflight + battery check each session.
-4. Audit with H2's `audit.py` plus one mobile check: base-action channels active in driving phases, near-zero during manipulation (phase discipline, verified from data).
-5. **Write first:** predicted replay drift in cm at table B, from your Exercise 1 mechanism. Then visualize 3 episodes and replay one on the robot (`examples/lekiwi/replay.py`) — dead-reckoning drift vs the taped marks is your first quantitative reality-gap datum; measure and log it in cm and reconcile.
+1. Write the task specification in `TASK.md` in the H2 style: the object starts in a taped grid on table B with three positions, is carried to a bin on table A, the base start pose is taped, the success sentence is written, and episodes are under 90 seconds. Floor markers make base starts repeatable, because dead reckoning will not.
+2. Carry over H2's protocol with three mobile amendments. First, phase consistency: the same phase order in every episode (drive, grasp, drive, place), with no grasps during a drive. Second, a latency gate: abort and re-record any episode with a visible teleoperation stutter. Third, camera framing: the front camera must see the destination table during driving phases, because H2's rule that the task must be doable from the camera images alone now covers navigation.
+3. Record 40–50 episodes through the documentation's `examples/lekiwi/record.py` flow, setting `remote_ip`, `repo_id`, and `task`, at about 25 per session. Run the H2 preflight and a battery check before each session.
+4. Audit with H2's `audit.py` plus one mobile check: the base-action channels should be active during driving phases and near zero during manipulation, which verifies phase discipline from the data.
+5. Before replaying, write down your predicted replay drift in centimetres at table B, derived from the mechanism you named in Exercise 1. Then visualise three episodes and replay one on the robot with `examples/lekiwi/replay.py`. The distance between where the base ends up and the taped marks is your first quantitative measurement of the reality gap; measure it in centimetres, log it, and reconcile it against the prediction.
 
-**✅ Checkpoint:** 40+ episodes on the Hub, audit + phase check green, replay drift measured and compared to the prediction.
+**✅ Checkpoint:** 40 or more episodes are on the Hub; the audit and phase check pass; the replay drift is measured and compared to the prediction.
 
-## Exercise 5 — Train, deploy, demo [Predict → Run]
+## Exercise 5 — Train, deploy, and record the demonstration [Predict → Run]
 
-Tests objective 4. ~1 session + cloud hours.
+Finally you train a policy on the mobile dataset, deploy it through the host, evaluate it under a pre-registered protocol, and record an uncut demonstration. The exercise tests objective 4. Budget one session plus the cloud training time.
 
-1. Train ACT on the mobile dataset (H3's recipe verbatim, ~$1–3 cloud). SmolVLA fine-tune instead if H4 left you with a working recipe and budget — one policy is enough to close the loop.
-2. **Write first:** predicted success out of 10, and which taxonomy class (H3's four + `navigation`) will dominate failures.
-3. Deploy via the docs' `examples/lekiwi/evaluate.py` pattern (policy on the Mac, actions streamed to the Pi host). Smoke-test 3 rollouts at slow speed with a clear floor.
-4. Eval, pre-registered (H3 discipline, scaled to a stretch lesson): 10 trials, fixed base-start + 3 object positions from the grid; success = object in bin, ≤ 90 s; failure taxonomy = H3's four + `navigation` (base fails to reach either table). Videos on. Reconcile against step 2.
-5. **The demo:** one clean uncut take — robot at table A, command issued, fetches from table B, returns, places. That's the closing shot of the build-in-public series.
+1. Train ACT on the mobile dataset using H3's recipe unchanged, at about $1–3 of cloud time. If H4 left you with a working SmolVLA fine-tuning recipe and budget, fine-tune that instead; one policy is enough to close the loop.
+2. Before evaluating, write down your predicted success out of ten and which taxonomy class (H3's four plus `navigation`) you expect to dominate the failures.
+3. Deploy using the documentation's `examples/lekiwi/evaluate.py` pattern, with the policy on the Mac and actions streamed to the Pi host. Smoke-test three rollouts at slow speed with a clear floor.
+4. Evaluate under a pre-registered protocol, scaled from H3 to suit a stretch lesson: ten trials, a fixed base start and three object positions from the grid, success defined as the object in the bin within 90 seconds, and a failure taxonomy of H3's four classes plus `navigation` (the base fails to reach either table). Record every trial on video, and reconcile against the prediction from step 2.
+5. Record the demonstration as one clean, uncut take: the robot starts at table A, receives the command, fetches from table B, returns, and places.
 
-**✅ Checkpoint:** ≥ 10 pre-registered trials logged with the dominant failure class named; the uncut demo video exists.
+**✅ Checkpoint:** ten or more pre-registered trials are logged with the dominant failure class named, and the uncut demonstration video exists.
 
 ## Deliverables
 
@@ -124,10 +138,10 @@ Tests objective 4. ~1 session + cloud hours.
 ## Done when
 
 - [ ] The robot fetches an object from another table on command, on video, uncut.
-- [ ] 10-trial pre-registered eval quantifies how reliably.
-- [ ] Network and battery budgets are documented numbers, not vibes.
+- [ ] A ten-trial pre-registered evaluation quantifies how reliably it does so.
+- [ ] The network and battery budgets are documented as measured numbers.
 - [ ] Replay drift was predicted from the kinematics before it was measured.
-- [ ] A reader of your log could decide in 10 minutes whether LeKiwi is worth it for them.
+- [ ] A reader of your log could decide in ten minutes whether LeKiwi is worth building.
 
 ## Self-check
 
@@ -146,13 +160,13 @@ Tests objective 4. ~1 session + cloud hours.
 | Teleop stutters only with video on | WiFi bandwidth (two streams + actions) | 5 GHz/dedicated AP, lower camera resolution, or wired variant |
 | Pi crashes mid-session | battery sag under motor load browning out the Pi | separate 5 V supply/BEC for the Pi; stop sessions at margin |
 | Base keyboard keys dead on Mac | Input Monitoring permission (pynput) | grant Terminal the permission per docs tip |
-| Replay ends far from taped marks | normal open-loop dead-reckoning drift | it's data, not a bug — measure it; keep episodes short; policies get vision to compensate |
+| Replay ends far from taped marks | normal open-loop dead-reckoning drift | expected; measure it, keep episodes short, and rely on the policy's vision to compensate |
 | Base creeps when keys released | key-release events lost over a laggy session | stop teleop, re-focus the terminal; if chronic, remap keys via `LeKiwiClientConfig` (see `robots/lekiwi/config_lekiwi.py`) and lower speed mode |
 | XLeRobot docs disagree with parts in hand | community project moving fast | build from the docs' pinned versions; file issues; budget tinker time |
 
 ## Going deeper
 
-**XLeRobot upgrade.** Second SO-101 arm set + IKEA RASKOG cart + battery (~$250 incremental) turns LeKiwi into XLeRobot, a dual-arm mobile household robot with a community-maintained ManiSkill sim and docs at xlerobot.readthedocs.io. This is community-project territory: read the current docs and open issues *before* ordering, expect breakage, and treat your build log as a contribution (file the issues you hit). Scope it as its own mini-project with H-track discipline: bring-up log, one bimanual-mobile task, pre-registered 10-trial eval.
+**The XLeRobot upgrade.** A second SO-101 arm set, an IKEA RASKOG cart, and a battery (about $250 incremental) turn LeKiwi into XLeRobot, a dual-arm mobile household robot with a community-maintained ManiSkill simulation and documentation at xlerobot.readthedocs.io. This is community-project territory: read the current documentation and the open issues before ordering, expect breakage, and treat your build log as a contribution by filing the issues you hit. Scope it as its own mini-project with the hardware track's discipline: a bring-up log, one bimanual mobile task, and a pre-registered ten-trial evaluation.
 
 ## Version note
 
@@ -163,4 +177,4 @@ The LeKiwi client examples (`teleoperate.py`, `record.py`, `replay.py`, `evaluat
 - [LeKiwi docs](https://huggingface.co/docs/lerobot/lekiwi) — host/client commands, keyboard map, speed modes verified Aug 2026.
 - [SIGRobotics-UIUC/LeKiwi](https://github.com/SIGRobotics-UIUC/LeKiwi) — BOM + assembly.
 - xlerobot.readthedocs.io — community docs; verify current state before purchase.
-- H2/H3 protocol docs (yours) — the discipline this lesson inherits.
+- H2/H3 protocol docs (yours): the discipline this lesson inherits.

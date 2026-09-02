@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Self-study robot-learning course. Map: `README.md`. Lesson format and execution contract: `TEMPLATE.md`. One lesson = one directory = one PR, with a `RESULTS.md` per lesson.
+Self-study robot-learning course. Map: `README.md`. Lesson format and execution contract: `TEMPLATE.md`. Prose standard for every file in this repo: `WRITING.md` (textbook register; the conversational style preferences do not apply to files). One lesson = one directory = one PR, with a `RESULTS.md` per lesson.
 
 ## Course philosophy (read before touching a lesson)
 
