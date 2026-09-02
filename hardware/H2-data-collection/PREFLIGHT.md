@@ -1,7 +1,6 @@
 # Preflight Checklist
 
-<!-- H2 stub — spec in README.md "Part 1 — Task and rig design" step 6. -->
-<!-- Implement yourself. Claude scaffolds, reviews, and verifies only — see TEMPLATE.md execution contract. -->
+<!-- H2 stub — the exercise in README.md that names this file specifies it. -->
 
 Run before every recording session, this lesson and later.
 

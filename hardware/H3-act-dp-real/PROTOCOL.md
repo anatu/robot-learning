@@ -1,7 +1,6 @@
 # Protocol
 
-<!-- H3 stub — spec in README.md "Part 2 — Pre-register the protocol". -->
-<!-- Implement yourself. Claude scaffolds, reviews, and verifies only — see TEMPLATE.md execution contract. -->
+<!-- H3 stub — the exercise in README.md that names this file specifies it. -->
 
 ## Conditions
 

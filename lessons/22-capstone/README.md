@@ -1,14 +1,14 @@
 # Lesson 22 — Capstone
 
-One open-ended project that closes a full loop — data, training, deployment, evaluation, iteration — and produces a portfolio artifact someone else could reproduce. The format follows MIT Robotic Manipulation's project structure: 1-page proposal → check-ins → 3–5 min video → short report.
+One open-ended project that closes a full loop — data, training, deployment, evaluation, iteration — under a protocol you committed before the headline experiment ran; the proof is one headline number, with its CI, that a stranger reproduces from your repo. The format follows MIT Robotic Manipulation's project structure: 1-page proposal → check-ins → 3–5 min video → short report.
 
 | | |
 |---|---|
 | **Phase** | 6 — Capstone |
-| **Time** | ~4 weeks part-time (the week-by-week sketches below assume ~8–10 h/week) |
+| **Time** | ~4 weeks part-time (the week-by-week sketches below assume ~6–8 h/week with AI-assisted coding) |
 | **Cost** | option-dependent: $10–40 cloud GPU; option 2 adds Isaac-capable RTX cloud time; options 1/3 need the SO-101 |
-| **Prerequisites** | the track you've built: 14/15 (policies + eval harness), 18 (fine-tuning), 16 (async deploy); per-option extras listed in each brief |
-| **Feeds into** | the build-in-public series finale; your portfolio |
+| **Prerequisites** | the track you've built: 14/15 (policies + `evaluate(...)` harness), 18 (fine-tuning), 16 (async deploy); per-option extras listed in each brief |
+| **Feeds into** | your portfolio; the optional build-in-public finale |
 
 ## Learning objectives
 
@@ -16,7 +16,7 @@ After the capstone you can:
 
 1. **Scope** a research-shaped project to a fixed time and dollar budget, with pre-registered success criteria and a fallback.
 2. **Execute** a full loop where the evaluation protocol was committed before the headline experiment ran.
-3. **Communicate** the result three ways — a reproducible repo, a 4-page report, a 3–5 minute video — each carrying the same honest headline number.
+3. **Communicate** the result three ways — a reproducible repo, a 2–3 page report, a 3–5 minute video — each carrying the same honest headline number.
 4. **Defend** the result against the strongest objection you can construct (the report's limitations section is graded like a rebuttal).
 
 ## The rules (all options)
@@ -25,6 +25,8 @@ After the capstone you can:
 - **One headline number.** Every deliverable leads with the same claim (e.g. "correction loop: 42% → 71% ± CI over two iterations"). If you can't state the headline as one sentence with a number, the project isn't scoped yet.
 - **Reproduction bar.** A stranger with the repo, the listed hardware, and the README reproduces the headline number without messaging you. That's the "done" test for the whole course.
 - **Failure is publishable.** A negative result with a clean protocol and a diagnosed cause meets the bar; a positive result with a leaky protocol does not.
+- **Code is AI-assisted; the science is yours.** Specs, drafts, and plumbing may come from an AI tool. The proposal, the protocol, every prediction written before a run, the analysis, and the limitations-as-rebuttal are non-delegable — they are the capstone.
+- **Predict before you measure.** `PROPOSAL.md` states the headline number you *expect* and why; the report reconciles expectation against outcome, whichever way it went.
 
 ## Option 1 — Collect → train → deploy → improve *(recommended; needs SO-101)*
 
@@ -34,7 +36,7 @@ After the capstone you can:
 
 **Risks.** Correction quality is the hidden variable (sloppy takeovers teach sloppy recovery — decide your intervention policy in advance and log every takeover); improvement can saturate after iteration 1 (that's a finding — diagnose *which* failure modes the corrections fixed via H3's taxonomy).
 
-**Milestones.** W1: dataset + fine-tune + pre-registered eval, baseline number locked. W2: async deployment + first correction round (≥ 20 interventions) + retrain. W3: second round + retrain + final eval. W4: report, video, blog post.
+**Milestones.** W1: dataset + fine-tune + pre-registered eval, baseline number locked. W2: async deployment + first correction round (≥ 20 interventions) + retrain. W3: second round + retrain + final eval. W4: report, video.
 
 ## Option 2 — Sim-to-real: the Isaac path end-to-end
 
@@ -72,33 +74,33 @@ After the capstone you can:
 
 | Artifact | Acceptance criteria |
 |---|---|
-| `PROPOSAL.md` (1 page) | passes the proposal rubric below; merged before any headline work |
+| `PROPOSAL.md` (1 page) | passes the proposal rubric below; merged before any headline work; states the expected headline number |
 | `PROTOCOL.md` | eval spec exact enough that a stranger runs the same experiment; committed before the headline run |
-| Code + configs + seeds | one documented entry point per pipeline stage; reproduces the headline number |
-| `report.pdf` (4 pages, CoRL format) | structure below; limitations written as a rebuttal |
+| Code + configs + seeds | one documented entry point per pipeline stage; reproduces the headline number from one command |
+| `report.pdf` (2–3 pages) | structure below; limitations written as a rebuttal; expected-vs-measured headline reconciled |
 | Video (3–5 min) | structure below; includes ≥ 1 failure clip |
-| Closing blog post | the build-in-public series finale: what the course claimed, what your numbers showed |
+| Closing blog post *(optional)* | the build-in-public finale, if you publish: what the course claimed, what your numbers showed |
 
 **Proposal rubric** — each row must be unambiguously present:
 
 | Section | Bar |
 |---|---|
-| Problem + headline claim | one sentence, one number-to-be, falsifiable |
+| Problem + headline claim | one sentence, one number-to-be, falsifiable — and your predicted value with a reason |
 | Protocol sketch | trials, conditions, success definition, CI plan |
 | Schedule | 4 weekly milestones, each with a checkable artifact |
 | Risks + fallback | top 2 risks, and the salvage plan if W2's milestone slips |
 | Budget | $ and hours, itemized |
 
-**Report structure (4 pages).** §1 Problem + claim (¼ p). §2 System: what you built, one figure (1 p). §3 Experiments: protocol, headline table with CIs, one ablation or decomposition (1.5 p). §4 Limitations-as-rebuttal: the three strongest objections and your honest response (¾ p). §5 What you'd do with another month (¼ p).
+**Report structure (2–3 pages).** §1 Problem + claim, with the pre-registered expectation (¼ p). §2 System: what you built, one figure (½ p). §3 Experiments: protocol, headline table with CIs, one ablation or decomposition (1 p). §4 Limitations-as-rebuttal: the three strongest objections and your honest response (½ p). §5 What you'd do with another month (¼ p).
 
 **Video structure.** 0:00–0:30 the task and the claim, stated over real footage; middle: the system working *and failing*, narrated causally ("it misses here because…"); final 30 s: the headline number on screen, and the one thing you'd tell someone starting the same build.
 
 ## Done when
 
 - [ ] Git history shows proposal → protocol → results, in that order.
-- [ ] The headline number appears identically in repo README, report, and video — with its CI.
+- [ ] The headline number appears identically in repo README, report, and video — with its CI — and the report reconciles it against the proposal's prediction.
 - [ ] A named stranger (or a clean-machine run) reproduced the pipeline from the repo alone.
-- [ ] All six artifacts shipped; the blog post links the lot.
+- [ ] Proposal, protocol, code, report, and video shipped.
 
 ## Self-check
 
@@ -106,6 +108,7 @@ After the capstone you can:
 2. For your chosen option: which single measurement, if it came out badly, would falsify the project's premise — and does your W1 milestone surface it early?
 3. Why does the rubric grade limitations as a *rebuttal* rather than a list?
 4. What makes 20 pre-registered trials with CIs more publishable than 100 exploratory ones without?
+5. Your AI tool drafted the training and eval code. Which parts of the pipeline must you personally be able to explain line by line to a reviewer, and why those?
 
 ## Pitfalls
 
@@ -116,6 +119,7 @@ After the capstone you can:
 | "Reproducible" repo fails on a clean machine | environment rot | pin everything; CI job or a clean cloud-instance dry run in W4 |
 | Video runs long and shows only successes | montage instinct | script it to the structure; the failure clip is mandatory |
 | Protocol amendment temptation mid-run | OOD condition turned out too hard | amend with date + rationale in PROTOCOL.md and report both pre/post-amendment results |
+| Eval script "works" but you can't explain its success criterion | AI-drafted check never read against the protocol | diff the script's success test against `PROTOCOL.md`'s sentence before the headline run; they must match verbatim |
 
 ## References
 

@@ -1,6 +1,6 @@
 # NOTE — Beyond Imitation Survey (Lesson 20)
 
-<!-- 3-4 pages. See README.md "Part 1 — The survey note". This is a position piece with a taxonomy,
+<!-- 2–3 pages. See the exercise in README.md that names this file. This is a position piece with a taxonomy,
      not an annotated bibliography. -->
 
 ## Taxonomy table

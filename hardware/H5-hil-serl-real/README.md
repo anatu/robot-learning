@@ -15,12 +15,12 @@ The tutorial's centerpiece pipeline on physical hardware: reward classifier, dec
 After this lesson you can:
 
 1. **Constrain** a real-robot RL problem so exploration is safe and learnable: EE-space actions, workspace bounds, ROI crops, short horizons.
-2. **Train and calibrate** a reward classifier on your own data and articulate why classifier precision is the binding constraint on everything downstream.
-3. **Operate** a live actor/learner training session: intervene productively from the leader arm, read the intervention-rate curve, and know when to stop.
+2. **Decide** a reward classifier's operating point from held-out data and defend why precision, not recall, is the binding constraint.
+3. **Predict** the shape of a live actor/learner session from your Lesson 10 run, then operate one: intervene productively, read the intervention-rate curve, and know when to stop.
 4. **Evaluate** the trained policy against a pre-registered bar and diagnose the sim-to-real deltas against your Lesson 10 run.
 5. **Judge** the HIL-SERL claim from your own evidence.
 
-## Background
+## Principles
 
 **Why this works when naive real-robot RL doesn't.** Four constraints do the heavy lifting, and you configure every one: (1) *EE-space actions* — the policy commands x,y,z deltas, IK handles joints; per the docs, some tasks are near-unlearnable in joint space but learnable in EE space; (2) *workspace bounds* — a box in EE space that exploration cannot leave, enforced by the `EEBoundsAndSafety` processor: this is the primary safety mechanism, not the human; (3) *demos in the buffer* — your RLPD machinery from Lesson 09, seeding SAC off-policy learning; (4) *human gating* — you take over at incipient failure, and interventions land in the buffer as corrective experience (Lesson 10 taught you how their double-entry changes effective sampling).
 
@@ -30,13 +30,22 @@ After this lesson you can:
 
 **Safety doctrine, extended for autonomous exploration.** Everything from H1 plus: e-stop (power cut) within reach and *tested at session start*; EE bounds verified empirically before RL (drive the arm to each bound face via teleop — the processor must clamp); nothing fragile inside or near the bounding box; you never leave the loop — bathroom break = training paused, torque off. Wear no dangling anything near a robot that moves on its own initiative.
 
+**Carry forward**
+
+- The bounds box is the safety mechanism; the human is the *learning* mechanism.
+- Classifier precision gates everything downstream: a false positive is a reward the policy will learn to farm.
+- Short episodes and EE-space actions are what make the 1–2 h claim even plausible; both are sample-efficiency levers, not conveniences.
+- The Lesson 10 curves are predictions; reality's deviations are the lesson.
+
 | Source | Read for |
 |---|---|
 | [HIL-SERL real-robot docs](https://huggingface.co/docs/lerobot/hilserl) | the full workflow this lesson instantiates: config schema, bounds-finding, classifier, actor/learner — keep open throughout |
 | Tutorial §3.2.1 + Luo et al. 2024 | what the orchestration you're about to run is implementing; the 1–2 h claim's original evidence |
 | Your Lesson 10 `RESULTS.md` | your sim intervention-decay curve, classifier calibration, queue behavior — the predictions this lesson tests |
 
-## Part 1 — Task, bounds, config (~2 h, robot on, RL off)
+## Exercise 1 — Task, bounds, config [Build]
+
+Tests objective 1: the four constraints, configured and verified. ~2 h, robot on, RL off.
 
 1. **Task:** reach-and-place or push-to-region, 5–10 s horizon, binary visual success (object in marked zone). Resist pick-and-place-with-grasp for round one — grasp adds a contact-rich failure mode to a session that has enough novelty. Write the success criterion sentence.
 2. **Workspace bounds** — teleop the follower through the entire useful task region while the limit finder records:
@@ -51,7 +60,9 @@ After this lesson you can:
 
 **✅ Checkpoint:** all six bound faces clamp; takeover toggles cleanly; config committed to the repo; e-stop reach-test done with the arm moving.
 
-## Part 2 — Demos and classifier data (~1 h)
+## Exercise 2 — Demos and classifier data [Build]
+
+Tests the demos-in-buffer and classifier constraints. ~1 h.
 
 1. Record ~20–30 demo episodes (record mode, leader teleop):
    ```bash
@@ -67,38 +78,46 @@ After this lesson you can:
 
 **✅ Checkpoint:** two datasets on the Hub; crops chosen; success/failure label counts roughly balanced with ≥ 200 positive frames.
 
-## Part 3 — Train and *validate* the reward classifier (~1 h)
+## Exercise 3 — Train and *validate* the reward classifier [Decide]
+
+Tests objective 2. This is the one hard stop in the course. ~1 h.
 
 1. Train (docs' recipe: `helper2424/resnet10` backbone, 128×128, both cameras):
    ```bash
    lerobot-train --config_path configs/h5_reward_classifier.json
    ```
-2. **Validation gate, pre-registered:** on a held-out episode split — precision ≥ 0.95 at your operating `success_threshold`, recall ≥ 0.8, plus a manual false-positive gallery review. Sweep the threshold (Lesson 10's machinery); pick the operating point for precision, at recall's expense — a missed success costs a wasted episode, a false positive corrupts training.
+2. **Validation gate, pre-registered:** on a held-out episode split — precision ≥ 0.95 at your operating `success_threshold`, recall ≥ 0.8, plus a manual false-positive gallery review. Sweep the threshold (Lesson 10's machinery); pick the operating point for precision, at recall's expense — a missed success costs a wasted episode, a false positive corrupts training. Write the threshold and the rule that chose it in `RESULTS.md`.
 3. Live test: run the env with `reward_classifier.pretrained_path` set and `terminate_on_success: true`; stage 5 successes and 5 near-misses by teleop. Every near-miss that scores ≥ threshold gets investigated (usually: crop too loose or hard-negative shortage — fix data, retrain).
 
-**✅ Checkpoint:** written gate passed on held-out data *and* the 10-episode live test; threshold + numbers in `RESULTS.md`. Do not proceed on a failed gate — this is the one hard stop in the course.
+**✅ Checkpoint:** written gate passed on held-out data *and* the 10-episode live test; threshold + numbers in `RESULTS.md`. Do not proceed on a failed gate.
 
-## Part 4 — The training session (2–4 h, fully supervised)
+## Exercise 4 — The training session [Predict → Run]
 
-1. Pre-session: H2 preflight; e-stop test; bounds spot-check (two faces); W&B up; phone timelapse of the rig running (you'll want it).
-2. Launch learner, then actor (same config, two terminals; `policy.type=gaussian_actor`, `algorithm.type=sac` per current docs — your Lesson 09 rename note made flesh):
+Tests objective 3: your Lesson 10 curves as predictions. 2–4 h, fully supervised.
+
+1. **Write first**, from your Lesson 10 `RESULTS.md`: predicted wall-clock and episode count to first success; predicted shape of the intervention-rate curve (plateau height, when it starts to decay); which of the three components (classifier, decoupling, interventions) you expect to be hardest on the real arm.
+2. Pre-session: H2 preflight; e-stop test; bounds spot-check (two faces); W&B up; phone timelapse of the rig running (you'll want it).
+3. Launch learner, then actor (same config, two terminals; `policy.type=gaussian_actor`, `algorithm.type=sac` per current docs — your Lesson 09 rename note made flesh):
    ```bash
    python -m lerobot.rl.learner --config_path configs/h5_train.json
    python -m lerobot.rl.actor   --config_path configs/h5_train.json
    ```
    Docs-recommended knobs: `temperature_init: 1e-2` (too high makes your interventions ineffective), `policy_parameters_push_frequency: 2` s, `storage_device: cuda` if VRAM allows.
-3. **Intervention protocol** (from the docs + your Lesson 10 experience): let it explore the first episodes uninterrupted; then intervene *briefly* at incipient failure — short corrective nudges via `space`, not long demonstrations; as success begins, shrink interventions to quick finishing touches; deliberately taper. Log subjective session notes with timestamps — they'll explain curve features later.
-4. Watch on W&B: episodic reward trending up, intervention rate decaying (your Lesson 10 curve is the reference shape), episode length shortening as successes terminate early. Pathologies: reward up + your own eyes say "not succeeding" = classifier exploited → stop, fix classifier, restart; flat reward + interventions not helping past 45 min → check temperature and bounds tightness before burning the session.
-5. Stop when: ~10 consecutive uninterrupted successes, or 4 h wall-clock, whichever first. Checkpoint the policy either way.
+4. **Intervention protocol** (from the docs + your Lesson 10 experience): let it explore the first episodes uninterrupted; then intervene *briefly* at incipient failure — short corrective nudges via `space`, not long demonstrations; as success begins, shrink interventions to quick finishing touches; deliberately taper. Log subjective session notes with timestamps — they'll explain curve features later.
+5. Watch on W&B: episodic reward trending up, intervention rate decaying (your Lesson 10 curve is the reference shape), episode length shortening as successes terminate early. Pathologies: reward up + your own eyes say "not succeeding" = classifier exploited → stop, fix classifier, restart; flat reward + interventions not helping past 45 min → check temperature and bounds tightness before burning the session.
+6. Stop when: ~10 consecutive uninterrupted successes, or 4 h wall-clock, whichever first. Checkpoint the policy either way.
 
-**✅ Checkpoint:** a completed session with logged curves + timestamped notes; policy checkpoint saved; no safety event (any near-miss gets written up in `FAILURES.md`).
+**✅ Checkpoint:** a completed session with logged curves + timestamped notes; policy checkpoint saved; no safety event (any near-miss gets written up in `FAILURES.md`); predictions from step 1 reconciled against the curves.
 
-## Part 5 — Evaluation and the sim-to-real delta (~1 h)
+## Exercise 5 — Evaluation and the sim-to-real delta [Predict → Run]
 
-1. Pre-registered bar (write before eval): ≥ 90% over **20 consecutive** rollouts, zero interventions, object start randomized within the trained zone. Actor with interventions disabled (hands off the leader), 20 episodes, videos on.
+Tests objectives 4–5.
+
+1. Pre-registered bar (write before eval): ≥ 90% over **20 consecutive** rollouts, zero interventions, object start randomized within the trained zone. Write your predicted success count beside it. Actor with interventions disabled (hands off the leader), 20 episodes, videos on.
 2. `RESULTS.md`, the comparison that makes this a lesson rather than a stunt — real vs your Lesson 10 sim run: wall-clock and env-steps to first-success and to plateau; intervention count + decay shape; classifier operating points; every place reality diverged (latency, reset variance, classifier drift with lighting) and your best mechanism story for each.
+3. Judge the claim: does "near-perfect in 1–2 h" hold on your rig? State the verdict with the numbers that carry it.
 
-**✅ Checkpoint:** 20-rollout eval on video with the number, whatever it is.
+**✅ Checkpoint:** 20-rollout eval on video with the number, whatever it is; ≥ 5 sim-vs-real deltas each with a mechanism.
 
 ## Deliverables
 
@@ -109,12 +128,12 @@ After this lesson you can:
 | Policy checkpoint on Hub | with the exact config + step count it was stopped at |
 | Training-session record | W&B curves, intervention-rate plot, timestamped operator notes |
 | Eval: 20-rollout sheet + videos | pre-registered bar stated; consecutive, unedited |
-| `RESULTS.md` sim-vs-real analysis | ≥ 5 concrete deltas vs Lesson 10, each with a mechanism hypothesis |
+| `RESULTS.md` | Exercise 4/5 predictions vs outcomes; ≥ 5 concrete sim-vs-real deltas each with a mechanism hypothesis; the verdict on the 1–2 h claim |
 
 ## Done when
 
 - [ ] Classifier passed its pre-registered gate before any RL.
-- [ ] One full supervised session completed with declining intervention rate.
+- [ ] One full supervised session completed with declining intervention rate, predictions written beforehand.
 - [ ] 20-consecutive-rollout eval recorded; ≥ 90% or a precise account of why not (the account is equally valid coursework).
 - [ ] Sim-vs-real writeup would save the next person an hour of their robot's time.
 - [ ] Zero uncontrolled contacts all lesson.
@@ -138,6 +157,11 @@ After this lesson you can:
 | Learner throughput crawls | storage on CPU, or learner sharing the Mac with cameras + actor | `storage_device: cuda`; separate the learner (cloud/desktop GPU) |
 | Episode resets drift the object out of the trained zone | manual reset variance | tape the reset zone; fixed reset pose does the arm, *you* do the object — consistently |
 | v0.6 module paths differ from these commands | RL stack refactor drift | `python -m lerobot.rl.learner --help` and current hilserl docs page are authoritative |
+
+## Going deeper
+
+- **Classifier hardening loop.** Take the trained policy's near-success failures, add them as classifier negatives, retrain, and measure whether the reward-hacking margin (classifier score on failures) drops — Lesson 10's stretch on real frames.
+- **Grasp task, round two.** Repeat with pick-and-place; compare session length and intervention count against round one to price the contact-rich failure mode.
 
 ## References
 

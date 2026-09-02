@@ -1,7 +1,6 @@
 # Task Spec
 
-<!-- H6 stub — spec in README.md "Part 3 — Mobile dataset" step 1. -->
-<!-- Implement yourself. Claude scaffolds, reviews, and verifies only — see TEMPLATE.md execution contract. -->
+<!-- H6 stub — the exercise in README.md that names this file specifies it. -->
 
 ## Object + start zone (table B grid, 3 positions)
 
