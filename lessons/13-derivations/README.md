@@ -145,7 +145,7 @@ The final exercise assembles §1–§3 into a single document and tests all four
 1. Which single identity makes the forward posterior tractable, and why does it need the Markov property?
 2. When $w_t \to 1$, does the argmin of the objective change? Does the training distribution over sub-problems change? (These two questions have different answers.)
 3. In the CFM proof, why does the cross-term vanish only in the gradient and not in the loss values themselves?
-4. A perfectly trained $\epsilon$-model at $t \to 0$ has $\epsilon_\theta \to$ what, and why does this make $\epsilon$-parameterized samplers unstable near $t = 0$? (Lesson 15 shows this empirically.)
+4. As $t \to 0$, what value does a perfectly trained $\epsilon_\theta$ tend to, and why does this make $\epsilon$-parameterized samplers unstable near $t = 0$? (Lesson 15 shows this empirically.)
 5. Give the one-sentence version of why straight optimal-transport paths permit few-step sampling.
 
 ## Pitfalls

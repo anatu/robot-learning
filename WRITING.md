@@ -29,3 +29,4 @@ Lesson READMEs are teaching text. They should read like a chapter of a good text
 17. Commands, code blocks, and equations are verbatim and are not changed by this standard.
 18. Self-check questions are single questions and need no preamble.
 19. The style preferences that apply to conversational replies do not apply to files in this repository; this document does.
+20. **Mathematics must render on GitHub.** Keep inline math on one line and free of underscores inside `\text{}` (write `\mathrm{fps}` or introduce a symbol such as $s$ for a start index rather than `\text{ep\_start}`); inside table cells write conditioning bars as `\mid`, because a raw `|` splits the cell; and never end a math span on a relation (`$x \le$` followed by prose), because the expression renders with a dangling operator. Check a page with the GitHub markdown API or the rendered file before merging.

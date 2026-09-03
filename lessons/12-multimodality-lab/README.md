@@ -41,7 +41,7 @@ The remedy for mode-averaging is a model class that can represent a multimodal c
 | Head | Loss | What it models |
 |---|---|---|
 | MSE | $\|a - f_\theta(s)\|^2$ | the conditional mean (Gaussian maximum likelihood) |
-| CVAE | $\|a - p_\theta(s, z)\|^2 + \beta\, D_{KL}\!\left(q_\phi(z|s,a)\,\|\,\mathcal{N}(0,I)\right)$, $z \sim q_\phi$ via reparameterization | $p(a|s)$ through a latent $z$ (Lesson 13 derives the ELBO) |
+| CVAE | $\|a - p_\theta(s, z)\|^2 + \beta\, D_{KL}\!\left(q_\phi(z\mid s,a)\,\|\,\mathcal{N}(0,I)\right)$, $z \sim q_\phi$ via reparameterization | $p(a\mid s)$ through a latent $z$ (Lesson 13 derives the ELBO) |
 | DDPM | $\mathbb{E}_{t,\epsilon}\|\epsilon - \epsilon_\theta(x_t, t, s)\|^2$, $x_t = \sqrt{\bar\alpha_t}\,a + \sqrt{1-\bar\alpha_t}\,\epsilon$ | the reverse of a Gaussian corruption process (Lesson 13's simplified loss) |
 | CFM | $\mathbb{E}_{t,x_0}\|v_\theta(x_t, t, s) - (x_1 - x_0)\|^2$, $x_t = (1-t)x_0 + t x_1$, $x_0 \sim \mathcal{N}(0,I)$, $x_1 = a$ | a velocity field along the optimal-transport path |
 
