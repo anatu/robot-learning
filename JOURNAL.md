@@ -16,6 +16,11 @@ Cross-lesson log. Per-lesson numbers and interpretation live in each lesson's `R
 
 Newest first. Format: `### YYYY-MM-DD — [NN / HN / meta] title` + up to 5 bullets.
 
+### 2026-09-02 — [01 / meta] GitHub math rendering fixes
+
+- Lesson 01's windowing rule rendered with errors on GitHub: `\text{ep\_start}` (GitHub strips the backslash, leaving an underscore inside `\text`) and a math span ending in `\le` followed by inline code. Fixed by introducing $s$ and $e$ for episode start and end and closing the inequality with a symbol $\tau$ for `tolerance_s`.
+- Repo-wide scan found two more: raw `|` inside math in Lesson 12's loss table (splits the table cell; now `\mid`) and a dangling `\to` in Lesson 13's self-check. Rule added to `WRITING.md` (item 20). Verified with the GitHub markdown API (`gh api /markdown`), which shows each `$…$` span as a `<math-renderer>` element and exposes ragged tables.
+
 ### 2026-09-02 — [meta] Prose standard + full re-edit of lesson text
 
 - The restructure's prose was written in a clipped, slogan-heavy register (bold run-in fragments, one-line verdicts, dash-appended asides, claims without reasons) and read as generic model output rather than teaching text. Cause: the exemplar and brief carried a chat-reply style, and every rewrite copied it.
